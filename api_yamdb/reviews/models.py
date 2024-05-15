@@ -42,7 +42,7 @@ class Genres(models.Model):
 class Reviews(models.Model):
     text = models.TextField(verbose_name='Текст')
     score = models.IntegerField(
-        validators=[MinValueValidator(0),MaxValueValidator(100)],
+        validators=[MinValueValidator(1), MaxValueValidator(10)],
         verbose_name='Оценка'
     )
     title_id = models.ForeignKey(
