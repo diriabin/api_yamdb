@@ -2,15 +2,17 @@ from django.db import models
 from django.contrib.auth import get_user_model
 from django.core.validators import MinValueValidator, MaxValueValidator
 
+from .constans import SLICE_STR, MAX_LENGTH_SLUG, MAX_LENGTH_CHAR
+
 User = get_user_model()
 
 
 class Category(models.Model):
     name = models.CharField(
-        max_length=256, unique=True, verbose_name='Название'
+        max_length=MAX_LENGTH_CHAR, unique=True, verbose_name='Название'
     )
     slug = models.SlugField(
-        max_length=50, unique=True, verbose_name='Слаг'
+        max_length=MAX_LENGTH_SLUG, unique=True, verbose_name='Слаг'
     )
 
     class Meta:
@@ -19,15 +21,15 @@ class Category(models.Model):
         ordering = ['name']
 
     def __str__(self):
-        return self.name
+        return self.name[:SLICE_STR]
 
 
 class Genre(models.Model):
     name = models.CharField(
-        max_length=256, unique=True, verbose_name='Название'
+        max_length=MAX_LENGTH_CHAR, unique=True, verbose_name='Название'
     )
     slug = models.SlugField(
-        max_length=50, unique=True, verbose_name='Слаг'
+        max_length=MAX_LENGTH_SLUG, unique=True, verbose_name='Слаг'
     )
 
     class Meta:
@@ -36,7 +38,7 @@ class Genre(models.Model):
         ordering = ['name']
 
     def __str__(self):
-        return self.name
+        return self.name[:SLICE_STR]
 
 
 class Title(models.Model):
@@ -61,7 +63,7 @@ class Title(models.Model):
         ordering = ['name']
 
     def __str__(self):
-        return self.name[:20]
+        return self.name[:SLICE_STR]
 
 
 class Review(models.Model):
@@ -80,10 +82,10 @@ class Review(models.Model):
         ordering = ['id']
 
     def __str__(self):
-        return self.text
+        return self.text[:SLICE_STR]
 
 
-class Comments(models.Model):
+class Comment(models.Model):
     text = models.TextField(verbose_name='Текст')
     author = models.ForeignKey(
         User, on_delete=models.CASCADE, related_name='comments'
@@ -101,4 +103,4 @@ class Comments(models.Model):
         ordering = ['id']
 
     def __str__(self):
-        return self.text
+        return self.text[:SLICE_STR]
