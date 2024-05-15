@@ -1,5 +1,6 @@
 from django.db import models
 from django.contrib.auth import get_user_model
+from django.core.validators import MinValueValidator, MaxValueValidator
 
 User = get_user_model()
 
@@ -36,6 +37,25 @@ class Genres(models.Model):
 
     def __str__(self):
         return self.name
+
+
+class Reviews(models.Model):
+    text = models.TextField(verbose_name='Текст')
+    score = models.IntegerField(
+        validators=[MinValueValidator(0),MaxValueValidator(100)],
+        verbose_name='Оценка'
+    )
+    title_id = models.ForeignKey(
+        Titles, on_delete=models.CASCADE, related_name='comments'
+    )
+
+    class Meta:
+        verbose_name = 'Отзыв'
+        verbose_name_plural = 'Отзывы'
+        ordering = ['id']
+
+    def __str__(self):
+        return self.text
 
 
 class Comments(models.Model):
