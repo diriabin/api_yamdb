@@ -5,7 +5,7 @@ from reviews.models import Genre, Title
 
 
 class TitleSerializer(serializers.Serializer):
-    author = SlugRelatedField(slug='username', read_only=True)
+    author = SlugRelatedField(slug_field='username', read_only=True)
 
     class Meta:
         model = Title
