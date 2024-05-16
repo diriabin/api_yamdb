@@ -1,12 +1,12 @@
-from rest_framework import viewsets
+from rest_framework import mixins, viewsets
 from rest_framework.pagination import LimitOffsetPagination
 
-from .permissions import IsAuthorOrReadOnly
-from .serializers import TitleSerializer
-from reviews.models import Title
+from .permissions import IsAdminOrReadOnly, IsAuthorOrReadOnly
+from .serializers import GenreSerializer, TitleSerializer
+from reviews.models import Genre, Title
 
 
-class TitleViewSet(viewsets.ViewSet):
+class TitleViewSet(viewsets.ModelViewSet):
     queryset = Title.objects.all()
     pagination_class = LimitOffsetPagination
     serializer_class = TitleSerializer
@@ -14,3 +14,10 @@ class TitleViewSet(viewsets.ViewSet):
 
     def perform_create(self, serializer):
         serializer.save(author=self.request.user)
+
+
+class GenreViewSet(mixins.CreateModelMixin, mixins.ListModelMixin,
+                   mixins.DestroyModelMixin, viewsets.GenericViewSet):
+    queryset = Genre.objects.all()
+    serializer_class = GenreSerializer
+    permission_classes = IsAdminOrReadOnly
