@@ -1,11 +1,21 @@
 from django.contrib.auth import get_user_model
+from django.contrib.auth.validators import UnicodeUsernameValidator
 from django.db import models
 from django.contrib.auth.models import AbstractUser
+from .validators import name_is_not_me
 
 
 class CustomUser(AbstractUser):
+    username = models.CharField(
+        max_length=150,
+        unique=True,
+        validators=(UnicodeUsernameValidator(), name_is_not_me),
+        verbose_name='имя пользователя',
+    )
     bio = models.TextField(verbose_name='биография', null=True, blank=True)
-    email = models.EmailField('email адрес')
+    email = models.EmailField(verbose_name='email адрес', max_length=254,
+                              unique=True)
+    password = None
     role = models.CharField(
         default='user',
         choices=(
@@ -18,6 +28,10 @@ class CustomUser(AbstractUser):
         max_length=10,
 
     )
+
+    class Meta:
+        verbose_name = 'Пользователь'
+        verbose_name_plural = 'Пользователи'
 
     def save(self, *args, **kwargs):
         if self.is_superuser:

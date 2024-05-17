@@ -31,11 +31,11 @@ class CategorySerializer(serializers.Serializer):
 class UserSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
-        fields = ['username', 'email', 'password']
+        fields = ['username', 'email']
 
 
 class ConfirmationCodeSerializer(serializers.ModelSerializer):
     username = serializers.SlugField(source='user.username', read_only=True)
     class Meta:
         model = СonfirmationСode
-        fields = ['username', 'code']
+        fields = ['username', 'confirmation_code']

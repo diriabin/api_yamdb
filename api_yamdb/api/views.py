@@ -60,6 +60,7 @@ class CreateUserView(CreateModelMixin, GenericViewSet):
     serializer_class = UserSerializer
     permission_classes = (AllowAny,)
 
+
     def create(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
@@ -77,9 +78,7 @@ class CreateUserView(CreateModelMixin, GenericViewSet):
             recipient_list=[request.data.get('email')],
             fail_silently=False,
         )
-        headers = self.get_success_headers(serializer.data)
-        return Response(serializer.data, status=status.HTTP_201_CREATED,
-                        headers=headers)
+        return Response(serializer.data, status=status.HTTP_200_OK)
 
 
 class GetTokenView(CreateModelMixin, GenericViewSet):
@@ -89,12 +88,11 @@ class GetTokenView(CreateModelMixin, GenericViewSet):
     def create(self, request):
         username = request.data.get('username')
         user = get_object_or_404(User, username=username)
-        code = request.data.get('code')
+        code = request.data.get('confirmation_code')
         user_confirmation_code = get_object_or_404(СonfirmationСode, user=user)
         print(code, user_confirmation_code.code)
 
         if code == user_confirmation_code.code:
-            print('tttt')
             user.is_active = True
             user_confirmation_code.delete()
             refresh = RefreshToken.for_user(user)
