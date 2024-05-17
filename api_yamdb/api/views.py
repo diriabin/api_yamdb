@@ -4,9 +4,11 @@ from django.contrib.auth import get_user_model
 from django.conf import settings
 from django.core.mail import send_mail
 from django.shortcuts import get_object_or_404
+from django_filters.rest_framework import DjangoFilterBackend
+from rest_framework import filters
+from rest_framework.decorators import api_view
 from rest_framework import mixins, viewsets, status
 from rest_framework.mixins import CreateModelMixin
-from rest_framework.pagination import LimitOffsetPagination
 from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 from rest_framework.viewsets import GenericViewSet
@@ -23,43 +25,67 @@ User = get_user_model()
 
 class TitleViewSet(viewsets.ModelViewSet):
     queryset = Title.objects.all()
-    pagination_class = LimitOffsetPagination
     serializer_class = TitleSerializer
     permission_classes = (IsAuthorOrReadOnly,)
+    filter_backends = (DjangoFilterBackend,)
+    filterset_fields = ('category', 'genre', 'name', 'year')
 
     def perform_create(self, serializer):
         serializer.save(author=self.request.user)
 
 
 class GenreViewSet(mixins.CreateModelMixin, mixins.ListModelMixin,
-                   mixins.DestroyModelMixin, viewsets.GenericViewSet):
+                   viewsets.GenericViewSet):
     queryset = Genre.objects.all()
     serializer_class = GenreSerializer
     permission_classes = (IsAdminOrReadOnly,)
-
-    def perform_destroy(self, serializer):
-        obj = get_object_or_404(Genre, slug=self.kwargs.get('slug'))
-        obj.delete()
-        super(GenreViewSet, self).perform_destroy(serializer)
+    filter_backends = (filters.SearchFilter,)
+    search_fields = ('name',)
 
 
 class CategoryViewSet(mixins.CreateModelMixin, mixins.ListModelMixin,
-                      mixins.DestroyModelMixin, viewsets.GenericViewSet):
+                      viewsets.GenericViewSet):
     queryset = Category.objects.all()
     serializer_class = CategorySerializer
     permission_classes = (IsAdminOrReadOnly,)
+    filter_backends = (filters.SearchFilter,)
+    search_fields = ('name',)
 
-    def perform_destroy(self, serializer):
-        obj = get_object_or_404(Genre, slug=self.kwargs.get('slug'))
-        obj.delete()
-        super(CategoryViewSet, self).perform_destroy(serializer)
+
+@api_view(['PATCH', 'DELETE'])
+def genre_delete(request, genre_slug):
+    user = request.user
+
+    if not user.is_authenticated:
+        return Response(status=status.HTTP_405_METHOD_NOT_ALLOWED)
+    elif request.method == 'DELETE' and user.role == 'admin':
+        get_object_or_404(Genre, slug=genre_slug).delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)
+    elif request.method in ('PATCH', 'DELETE') and user.role != 'admin':
+        return Response(status=status.HTTP_403_FORBIDDEN)
+
+    return Response(status=status.HTTP_403_FORBIDDEN)
+
+
+@api_view(['PATCH', 'DELETE'])
+def category_delete(request, category_slug):
+    user = request.user
+
+    if not user.is_authenticated:
+        return Response(status=status.HTTP_405_METHOD_NOT_ALLOWED)
+    elif request.method == 'DELETE' and user.role == 'admin':
+        get_object_or_404(Category, slug=category_slug).delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)
+    elif request.method in ('PATCH', 'DELETE') and user.role != 'admin':
+        return Response(status=status.HTTP_403_FORBIDDEN)
+
+    return Response(status=status.HTTP_405_METHOD_NOT_ALLOWED)
 
 
 class CreateUserView(CreateModelMixin, GenericViewSet):
     queryset = User.objects.all()
     serializer_class = UserSerializer
     permission_classes = (AllowAny,)
-
 
     def create(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)
