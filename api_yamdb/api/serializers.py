@@ -10,7 +10,7 @@ from users.models import СonfirmationСode
 User = get_user_model()
 
 
-class TitleSerializer(serializers.Serializer):
+class TitleSerializer(serializers.ModelSerializer):
     author = SlugRelatedField(slug_field='username', read_only=True)
 
     class Meta:
@@ -18,13 +18,15 @@ class TitleSerializer(serializers.Serializer):
         fields = '__all__'
 
 
-class GenreSerializer(serializers.Serializer):
+class GenreSerializer(serializers.ModelSerializer):
+
     class Meta:
         model = Genre
-        fields = '__all__'
+        fields = ('name', 'slug')
 
 
-class CategorySerializer(serializers.Serializer):
+class CategorySerializer(serializers.ModelSerializer):
+
     class Meta:
         model = Category
         exclude = ('id',)
@@ -39,6 +41,7 @@ class UserSerializer(serializers.ModelSerializer):
 
 class ConfirmationCodeSerializer(serializers.ModelSerializer):
     username = serializers.SlugField(source='user.username', read_only=True)
+
     class Meta:
         model = СonfirmationСode
         fields = ['username', 'confirmation_code']
@@ -84,14 +87,3 @@ class CommentSerializer(serializers.ModelSerializer):
     class Meta:
         model = Comment
         fields = '__all__'
-
-
-# class CategorySerializer(serializers.ModelSerializer):
-#
-#     class Meta:
-#         model = Category
-#         exclude = ('id',)
-#         lookup_field = 'slug'
-#         extra_kwargs = {
-#             'url': {'lookup_field': 'slug'}
-#         }
