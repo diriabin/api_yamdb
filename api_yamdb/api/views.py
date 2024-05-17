@@ -82,19 +82,23 @@ def category_delete(request, category_slug):
     return Response(status=status.HTTP_405_METHOD_NOT_ALLOWED)
 
 
-class CreateUserView(CreateModelMixin, GenericViewSet):
+class CreateUserView(mixins.CreateModelMixin, viewsets.GenericViewSet):
     queryset = User.objects.all()
     serializer_class = UserSerializer
     permission_classes = (AllowAny,)
 
     def create(self, request, *args, **kwargs):
-        serializer = self.get_serializer(data=request.data)
-        serializer.is_valid(raise_exception=True)
-        self.perform_create(serializer)
-
+        serializer = UserSerializer(data=request.data)
         username = request.data.get('username')
+
+        if not User.objects.filter(username=username).exists():
+            serializer.is_valid(raise_exception=True)
+            self.perform_create(serializer)
+
         user = get_object_or_404(User, username=username)
         code = random.randint(100, 999)
+        if СonfirmationСode.objects.filter(user=user).exists():
+            СonfirmationСode.objects.filter(user=user).delete()
         СonfirmationСode.objects.create(user=user, code=code)
 
         send_mail(
@@ -104,10 +108,12 @@ class CreateUserView(CreateModelMixin, GenericViewSet):
             recipient_list=[request.data.get('email')],
             fail_silently=False,
         )
+
+        serializer.is_valid()
         return Response(serializer.data, status=status.HTTP_200_OK)
 
 
-class GetTokenView(CreateModelMixin, GenericViewSet):
+class GetTokenView(mixins.CreateModelMixin, viewsets.GenericViewSet):
     permission_classes = (AllowAny,)
     serializer_class = ConfirmationCodeSerializer
 
@@ -130,3 +136,32 @@ class GetTokenView(CreateModelMixin, GenericViewSet):
 
         return Response({"message": "неверный код подтверждения."},
                         status=status.HTTP_400_BAD_REQUEST)
+
+
+class UserView(mixins.RetrieveModelMixin, mixins.ListModelMixin,
+               viewsets.GenericViewSet, mixins.CreateModelMixin):
+    serializer_class = UserSerializer
+    queryset = User.objects.all()
+    permission_classes = (AllowAny,)
+
+    def retrieve(self, request, *args, **kwargs):
+        username = kwargs.get('pk')
+        if username == 'me':
+            if request.user.is_authenticated:
+                username = request.user.username
+            else:
+                return Response({'error': 'пользователь не аутентифицирован'},
+                                status=status.HTTP_401_UNAUTHORIZED)
+        user = self.queryset.get(username=username)
+        if user is None:
+            return Response({'error': 'пользователь не найден'},
+                            status=status.HTTP_404_NOT_FOUND)
+        serializer = self.serializer_class(user)
+        return Response(serializer.data)
+
+    def create(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        self.perform_create(serializer)
+
+        return Response(serializer.data, status=status.HTTP_200_OK)
