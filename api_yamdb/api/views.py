@@ -143,15 +143,14 @@ class ReviewViewSet(viewsets.ModelViewSet):
     serializer_class = ReviewSerializer
     permission_classes = (IsAdminModeratorOwnerOrReadOnly,)
 
-    def get_queryset(self):
-        title = get_object_or_404(Title, pk=self.kwargs.get('title_id'))
+    def get_title(self):
+        return get_object_or_404(Title, pk=self.kwargs.get('title_id'))
 
-        return title.reviews.all()
+    def get_queryset(self):
+        return self.get_title().reviews.all()
 
     def perform_create(self, serializer):
-        title_id = self.kwargs.get('title_id')
-        title = get_object_or_404(Title, id=title_id)
-        serializer.save(author=self.request.user, title=title)
+        serializer.save(author=self.request.user, title=self.get_title())
 
 
 class CommentViewSet(viewsets.ModelViewSet):
@@ -159,14 +158,17 @@ class CommentViewSet(viewsets.ModelViewSet):
     permission_classes = (IsAdminModeratorOwnerOrReadOnly,)
 
     def get_queryset(self):
-        review = get_object_or_404(Review, pk=self.kwargs.get('review_id'))
-        return review.comments.all()
+        return get_object_or_404(
+            Review, pk=self.kwargs.get('review_id')
+        ).comments.all()
 
     def perform_create(self, serializer):
-        title_id = self.kwargs.get('title_id')
-        review_id = self.kwargs.get('review_id')
-        review = get_object_or_404(Review, id=review_id, title=title_id)
-        serializer.save(author=self.request.user, review=review)
+        serializer.save(
+            author=self.request.user,
+            review=get_object_or_404(
+                Review, id=self.kwargs.get('review_id'),
+                title=self.kwargs.get('title_id')
+            ))
 
 
 class UserView(mixins.RetrieveModelMixin, mixins.ListModelMixin,
@@ -183,16 +185,17 @@ class UserView(mixins.RetrieveModelMixin, mixins.ListModelMixin,
             else:
                 return Response({'error': 'пользователь не аутентифицирован'},
                                 status=status.HTTP_401_UNAUTHORIZED)
-        user = self.queryset.get(username=username)
-        if user is None:
+        if self.queryset.get(username=username) is None:
             return Response({'error': 'пользователь не найден'},
                             status=status.HTTP_404_NOT_FOUND)
-        serializer = self.serializer_class(user)
+        serializer = self.serializer_class(
+            self.queryset.get(username=username)
+        )
         return Response(serializer.data)
 
     def create(self, request, *args, **kwargs):
-        serializer = self.get_serializer(data=request.data)
-        serializer.is_valid(raise_exception=True)
-        self.perform_create(serializer)
+        self.get_serializer(data=request.data).is_valid(raise_exception=True)
+        self.perform_create(self.get_serializer(data=request.data))
 
-        return Response(serializer.data, status=status.HTTP_200_OK)
+        return Response(self.get_serializer(data=request.data).data,
+                        status=status.HTTP_200_OK)
