@@ -11,7 +11,8 @@ from rest_framework_simplejwt.tokens import AccessToken
 
 from .permissions import (IsAdminOrReadOnly, IsAdminModeratorOwnerOrReadOnly,
                           IsAdmin)
-from .serializers import (CategorySerializer, GenreSerializer, TitleSerializer,
+from .serializers import (CategorySerializer, GenreSerializer,
+                          TitleReadSerializer, TitleWriteSerializer,
                           UserSerializer, CommentSerializer, ReviewSerializer,
                           RegisterDataSerializer, TokenSerializer,
                           UserEditSerializer)
@@ -23,13 +24,14 @@ User = get_user_model()
 
 class TitleViewSet(viewsets.ModelViewSet):
     queryset = Title.objects.all()
-    serializer_class = TitleSerializer
     permission_classes = (IsAdminOrReadOnly,)
     filter_backends = (DjangoFilterBackend,)
     filterset_fields = ('category', 'genre', 'name', 'year')
 
-    def perform_create(self, serializer):
-        serializer.save(author=self.request.user)
+    def get_serializer_class(self):
+        if self.action in ['list', 'retrieve']:
+            return TitleReadSerializer
+        return TitleWriteSerializer
 
 
 class CategoryViewSet(ListCreateDestroyViewSet):
