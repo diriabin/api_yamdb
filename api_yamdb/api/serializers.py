@@ -11,25 +11,40 @@ from users.models import СonfirmationСode
 User = get_user_model()
 
 
-class TitleSerializer(serializers.ModelSerializer):
-    author = SlugRelatedField(slug_field='username', read_only=True)
+class GenreSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Genre
+        fields = ('name', 'slug')
+        lookup_field = 'slug'
+
+
+class CategorySerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Category
+        fields = ('name', 'slug')
+        lookup_field = 'slug'
+
+
+class TitleReadSerializer(serializers.ModelSerializer):
+    genre = GenreSerializer(many=True)
+    category = CategorySerializer()
 
     class Meta:
         model = Title
         fields = '__all__'
 
 
-class GenreSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = Genre
-        fields = ('name', 'slug')
+class TitleWriteSerializer(serializers.ModelSerializer):
+    genre = serializers.SlugRelatedField(
+        queryset=Genre.objects.all(), slug_field='slug', many=True
+    )
+    category = serializers.SlugRelatedField(
+        queryset=Category.objects.all(), slug_field='slug'
+    )
 
-
-class CategorySerializer(serializers.ModelSerializer):
     class Meta:
-        model = Category
-        exclude = ('id',)
-        lookup_field = 'slug'
+        model = Title
+        fields = '__all__'
 
 
 class UserSerializer(serializers.ModelSerializer):
@@ -123,4 +138,3 @@ class UserEditSerializer(serializers.ModelSerializer):
                   "last_name", "bio", "role")
         model = User
         read_only_fields = ('role',)
-
