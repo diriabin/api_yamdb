@@ -75,14 +75,18 @@ class Title(models.Model):
 
 
 class Review(models.Model):
-    text = models.TextField(verbose_name='Текст')
+    text = models.TextField('Текст')
     score = models.IntegerField(
         validators=[MinValueValidator(1), MaxValueValidator(10)],
         verbose_name='Оценка'
     )
+    author = models.ForeignKey(
+        User, on_delete=models.CASCADE, related_name='reviews'
+    )
     title_id = models.ForeignKey(
         Title, on_delete=models.CASCADE, related_name='reviews'
     )
+    pub_date = models.DateTimeField('Дата создания', auto_now_add=True)
 
     class Meta:
         verbose_name = 'Отзыв'
@@ -94,7 +98,7 @@ class Review(models.Model):
 
 
 class Comment(models.Model):
-    text = models.TextField(verbose_name='Текст')
+    text = models.TextField('Текст')
     author = models.ForeignKey(
         User, on_delete=models.CASCADE, related_name='comments'
     )
@@ -104,6 +108,7 @@ class Comment(models.Model):
     review_id = models.ForeignKey(
         Review, on_delete=models.CASCADE, related_name='comments'
     )
+    pub_date = models.DateTimeField('Дата создания', auto_now_add=True)
 
     class Meta:
         verbose_name = 'Комментарий'
