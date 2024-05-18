@@ -5,13 +5,11 @@ from django.conf import settings
 from django.core.mail import send_mail
 from django.shortcuts import get_object_or_404
 from django_filters.rest_framework import DjangoFilterBackend
-from rest_framework import filters
+from rest_framework import filters, status
 from rest_framework.decorators import api_view
-from rest_framework import mixins, viewsets, status
-from rest_framework.mixins import CreateModelMixin
+from rest_framework import mixins, viewsets
 from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
-from rest_framework.viewsets import GenericViewSet
 from rest_framework_simplejwt.tokens import RefreshToken
 
 from .permissions import IsAdminOrReadOnly, IsAdminModeratorOwnerOrReadOnly
@@ -91,10 +89,15 @@ class CreateUserView(mixins.CreateModelMixin, viewsets.GenericViewSet):
     def create(self, request, *args, **kwargs):
         serializer = UserSerializer(data=request.data)
         username = request.data.get('username')
+        email = request.data.get('email')
 
         if not User.objects.filter(username=username).exists():
             serializer.is_valid(raise_exception=True)
             self.perform_create(serializer)
+        else:
+            if User.objects.get(username=username).email != email:
+                return Response(request.data,
+                                status=status.HTTP_400_BAD_REQUEST)
 
         user = get_object_or_404(User, username=username)
         code = random.randint(100, 999)
@@ -110,8 +113,7 @@ class CreateUserView(mixins.CreateModelMixin, viewsets.GenericViewSet):
             fail_silently=False,
         )
 
-        serializer.is_valid()
-        return Response(serializer.data, status=status.HTTP_200_OK)
+        return Response(request.data, status=status.HTTP_200_OK)
 
 
 class GetTokenView(mixins.CreateModelMixin, viewsets.GenericViewSet):
@@ -127,7 +129,7 @@ class GetTokenView(mixins.CreateModelMixin, viewsets.GenericViewSet):
 
         if code == user_confirmation_code.code:
             user.is_active = True
-            user_confirmation_code.delete()
+            # user_confirmation_code.delete()
             refresh = RefreshToken.for_user(user)
             token = {
                 'refresh': str(refresh),
@@ -168,16 +170,27 @@ class CommentViewSet(viewsets.ModelViewSet):
             review=get_object_or_404(
                 Review, id=self.kwargs.get('review_id'),
                 title=self.kwargs.get('title_id')
-            ))
+            )
+        )
 
 
-class UserView(mixins.RetrieveModelMixin, mixins.ListModelMixin,
-               viewsets.GenericViewSet, mixins.CreateModelMixin):
+
+class UserViewSet(viewsets.ModelViewSet):
     serializer_class = UserSerializer
     queryset = User.objects.all()
-    permission_classes = (AllowAny,)
+    permission_classes = (IsAdminModeratorOwnerOrReadOnly,)
+
+    def list(self, request, *args, **kwargs):
+        if not request.user.is_authenticated:
+            return Response({'error': 'пользователь не аутентифицирован'},
+                            status=status.HTTP_401_UNAUTHORIZED)
+        serializer = self.get_serializer(self.queryset, many=True)
+        return Response(serializer.data)
 
     def retrieve(self, request, *args, **kwargs):
+        if not request.user.is_authenticated:
+            return Response({'error': 'пользователь не аутентифицирован'},
+                            status=status.HTTP_401_UNAUTHORIZED)
         username = kwargs.get('pk')
         if username == 'me':
             if request.user.is_authenticated:
@@ -185,17 +198,16 @@ class UserView(mixins.RetrieveModelMixin, mixins.ListModelMixin,
             else:
                 return Response({'error': 'пользователь не аутентифицирован'},
                                 status=status.HTTP_401_UNAUTHORIZED)
-        if self.queryset.get(username=username) is None:
+        if self.queryset.filter(username=username).exists():
+            user = self.queryset.get(username=username)
+            serializer = self.serializer_class(user)
+            return Response(serializer.data)
+        else:
             return Response({'error': 'пользователь не найден'},
                             status=status.HTTP_404_NOT_FOUND)
-        serializer = self.serializer_class(
-            self.queryset.get(username=username)
-        )
-        return Response(serializer.data)
 
     def create(self, request, *args, **kwargs):
-        self.get_serializer(data=request.data).is_valid(raise_exception=True)
-        self.perform_create(self.get_serializer(data=request.data))
-
-        return Response(self.get_serializer(data=request.data).data,
-                        status=status.HTTP_200_OK)
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        self.perform_create(serializer)
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
