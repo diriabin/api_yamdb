@@ -12,7 +12,7 @@ class CustomUser(AbstractUser):
         verbose_name='имя пользователя',
     )
     bio = models.TextField(verbose_name='биография', null=True, blank=True)
-    email = models.EmailField(verbose_name='email адрес', max_length=254,
+    email = models.EmailField(verbose_name='email адрес',
                               unique=True)
     password = None
     role = models.CharField(
