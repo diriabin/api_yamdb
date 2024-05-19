@@ -5,6 +5,7 @@ from django.shortcuts import get_object_or_404
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework import filters, status, permissions, viewsets
 from rest_framework.decorators import action, api_view, permission_classes
+from rest_framework.exceptions import ValidationError
 from rest_framework.response import Response
 from rest_framework.pagination import PageNumberPagination
 from rest_framework_simplejwt.tokens import AccessToken
@@ -69,7 +70,7 @@ class ReviewViewSet(viewsets.ModelViewSet):
         return self.get_title().reviews.all()
 
     def perform_create(self, serializer):
-        serializer.save(author=self.request.user, title_id=self.get_title())
+        serializer.save(author=self.request.user, title=self.get_title())
 
 
 class CommentViewSet(viewsets.ModelViewSet):
