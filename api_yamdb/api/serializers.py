@@ -1,6 +1,5 @@
 from django.contrib.auth import get_user_model
 from rest_framework import serializers
-from rest_framework.relations import SlugRelatedField
 from rest_framework.generics import get_object_or_404
 from rest_framework.exceptions import ValidationError
 from rest_framework.validators import UniqueValidator
@@ -61,18 +60,24 @@ class ConfirmationCodeSerializer(serializers.ModelSerializer):
         fields = ['username', 'confirmation_code']
 
 
-class ReviewSerializer(serializers.ModelSerializer):
-    title = serializers.SlugRelatedField(
-        slug_field='name',
-        read_only=True,
-    )
+class ReviewReadSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Review
+        fields = '__all__'
+
+
+class ReviewWriteSerializer(serializers.ModelSerializer):
     author = serializers.SlugRelatedField(
         default=serializers.CurrentUserDefault(),
         slug_field='username',
         read_only=True
     )
+    title_id = serializers.SlugRelatedField(
+        slug_field='name',
+        read_only=True,
+    )
 
-    def validate_title(self, data):
+    def validate_title_id(self, data):
         request = self.context['request']
         if request.method == 'POST':
             if Review.objects.filter(
@@ -85,9 +90,12 @@ class ReviewSerializer(serializers.ModelSerializer):
                                       'одного отзыва на произведение')
         return data
 
+    def to_representation(self, instance):
+        return ReviewReadSerializer(instance).data
+
     class Meta:
         model = Review
-        fields = '__all__'
+        fields = ('text', 'score', 'author', 'title_id')
 
 
 class CommentSerializer(serializers.ModelSerializer):

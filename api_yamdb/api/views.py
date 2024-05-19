@@ -9,11 +9,13 @@ from rest_framework.response import Response
 from rest_framework.pagination import PageNumberPagination
 from rest_framework_simplejwt.tokens import AccessToken
 
+from .filters import TitleFilter
 from .permissions import (IsAdminOrReadOnly, IsAdminModeratorOwnerOrReadOnly,
                           IsAdmin)
 from .serializers import (CategorySerializer, GenreSerializer,
                           TitleReadSerializer, TitleWriteSerializer,
-                          UserSerializer, CommentSerializer, ReviewSerializer,
+                          UserSerializer, CommentSerializer,
+                          ReviewReadSerializer, ReviewWriteSerializer,
                           RegisterDataSerializer, TokenSerializer,
                           UserEditSerializer)
 from reviews.models import Category, Genre, Title, Review
@@ -26,7 +28,7 @@ class TitleViewSet(viewsets.ModelViewSet):
     queryset = Title.objects.all()
     permission_classes = (IsAdminOrReadOnly,)
     filter_backends = (DjangoFilterBackend,)
-    filterset_fields = ('category', 'genre', 'name', 'year')
+    filterset_class = TitleFilter
 
     def get_serializer_class(self):
         if self.action in ['list', 'retrieve']:
@@ -53,8 +55,12 @@ class GenreViewSet(ListCreateDestroyViewSet):
 
 
 class ReviewViewSet(viewsets.ModelViewSet):
-    serializer_class = ReviewSerializer
     permission_classes = (IsAdminModeratorOwnerOrReadOnly,)
+
+    def get_serializer_class(self):
+        if self.action in ['list', 'retrieve']:
+            return ReviewReadSerializer
+        return ReviewWriteSerializer
 
     def get_title(self):
         return get_object_or_404(Title, pk=self.kwargs.get('title_id'))
@@ -63,7 +69,7 @@ class ReviewViewSet(viewsets.ModelViewSet):
         return self.get_title().reviews.all()
 
     def perform_create(self, serializer):
-        serializer.save(author=self.request.user, title=self.get_title())
+        serializer.save(author=self.request.user, title_id=self.get_title())
 
 
 class CommentViewSet(viewsets.ModelViewSet):

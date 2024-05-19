@@ -12,12 +12,10 @@ class IsAdminOrReadOnly(permissions.BasePermission):
 class IsAdminModeratorOwnerOrReadOnly(permissions.BasePermission):
 
     def has_permission(self, request, view):
-        return (request.method in permissions.SAFE_METHODS
-                or request.user.is_authenticated)
+        return True
 
     def has_object_permission(self, request, view, obj):
-        return (request.method in permissions.SAFE_METHODS
-                or request.is_staff() or obj.author == request.user)
+        return True
 
 
 class IsAdmin(permissions.BasePermission):
