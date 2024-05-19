@@ -122,11 +122,11 @@ class SignUpSerializer(serializers.Serializer):
         if user_by_email:
             if username != user_by_email.username:
                 raise serializers.ValidationError(
-                    "Пользователь с таким email почты уже зарегистрирован.")
+                    'Пользователь с таким email почты уже зарегистрирован.')
         if user_by_name:
             if email != user_by_name.email:
                 raise serializers.ValidationError(
-                    "Пользователь с таким именем уже зарегистрирован.")
+                    'Пользователь с таким именем уже зарегистрирован.')
 
         return attrs
 
