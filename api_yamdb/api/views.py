@@ -10,7 +10,6 @@ from rest_framework.views import APIView
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework.filters import SearchFilter
-from django.db import IntegrityError
 
 
 from .filters import TitleFilter
