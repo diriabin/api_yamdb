@@ -1,9 +1,9 @@
 from django.contrib.auth import get_user_model
+from django.contrib.auth.validators import UnicodeUsernameValidator
 from rest_framework import serializers
-from rest_framework.generics import get_object_or_404
-from rest_framework.exceptions import ValidationError
 
 from reviews.models import Category, Genre, Title, Review, Comment
+from users.validators import name_is_not_me
 
 User = get_user_model()
 
@@ -45,7 +45,6 @@ class TitleWriteSerializer(serializers.ModelSerializer):
 
 
 class UserSerializer(serializers.ModelSerializer):
-
     class Meta:
         model = User
         fields = (
@@ -107,11 +106,29 @@ class GetTokenSerializer(serializers.ModelSerializer):
         )
 
 
-class SignUpSerializer(serializers.ModelSerializer):
+class SignUpSerializer(serializers.Serializer):
+    email = serializers.EmailField(max_length=254)
+    username = serializers.CharField(
+        max_length=150,
+        validators=(UnicodeUsernameValidator(), name_is_not_me),
+    )
 
-    class Meta:
-        model = User
-        fields = ('email', 'username')
+    def validate(self, attrs):
+        email = attrs.get('email')
+        username = attrs.get('username')
+        user_by_name = User.objects.filter(username=username).first()
+        user_by_email = User.objects.filter(email=email).first()
+
+        if user_by_email:
+            if username != user_by_email.username:
+                raise serializers.ValidationError(
+                    "Пользователь с таким email почты уже зарегистрирован.")
+        if user_by_name:
+            if email != user_by_name.email:
+                raise serializers.ValidationError(
+                    "Пользователь с таким именем уже зарегистрирован.")
+
+        return attrs
 
 
 class NotAdminSerializer(serializers.ModelSerializer):
