@@ -1,14 +1,13 @@
 from django.contrib.auth.validators import UnicodeUsernameValidator
 from django.db import models
 from django.contrib.auth.models import AbstractUser
-from .validators import name_is_not_me
 
 
 class CustomUser(AbstractUser):
     username = models.CharField(
         max_length=150,
         unique=True,
-        validators=(UnicodeUsernameValidator(), name_is_not_me),
+        validators=(UnicodeUsernameValidator(),),
         verbose_name='имя пользователя',
     )
     bio = models.TextField(verbose_name='биография', null=True, blank=True)
