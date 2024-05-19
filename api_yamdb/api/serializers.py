@@ -70,19 +70,6 @@ class ReviewWriteSerializer(serializers.ModelSerializer):
         read_only=True,
     )
 
-    def validate_title_id(self, data):
-        request = self.context['request']
-        if request.method == 'POST':
-            if Review.objects.filter(
-                    title=get_object_or_404(
-                        Title, name=data
-                    ),
-                    author=request.user
-            ).exists():
-                raise ValidationError('Вы не можете добавить более'
-                                      'одного отзыва на произведение')
-        return data
-
     def to_representation(self, instance):
         return ReviewReadSerializer(instance).data
 
