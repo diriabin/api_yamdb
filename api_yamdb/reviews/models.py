@@ -63,6 +63,11 @@ class Title(models.Model):
         null=True,
         blank=True,
     )
+    rating = models.IntegerField(
+        verbose_name='Рейтинг',
+        null=True,
+        default=None
+    )
 
     class Meta:
         verbose_name = 'Произведение'
@@ -75,7 +80,7 @@ class Title(models.Model):
 
 class Review(models.Model):
     text = models.TextField('Текст')
-    score = models.IntegerField(
+    score = models.PositiveSmallIntegerField(
         validators=[MinValueValidator(1), MaxValueValidator(10)],
         verbose_name='Оценка'
     )
@@ -88,10 +93,15 @@ class Review(models.Model):
     pub_date = models.DateTimeField('Дата создания', auto_now_add=True)
 
     class Meta:
-        unique_together = ['author', 'title']
         verbose_name = 'Отзыв'
         verbose_name_plural = 'Отзывы'
         ordering = ['id']
+        constraints = [
+            models.UniqueConstraint(
+                fields=['title', 'author'],
+                name='unique_review'
+            ),
+        ]
 
     def __str__(self):
         return self.text[:SLICE_STR]

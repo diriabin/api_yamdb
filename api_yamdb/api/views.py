@@ -10,9 +10,10 @@ from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework_simplejwt.tokens import RefreshToken
-from reviews.models import Category, Genre, Review, Title
+from django.db.models import Avg
 
 from api_yamdb.settings import DEFAULT_EMAIL
+from reviews.models import Category, Genre, Review, Title
 from .filters import TitleFilter
 from .mixins import ListCreateDestroyViewSet
 from .permissions import (IsAdmin, IsAdminModeratorOwnerOrReadOnly,
@@ -22,7 +23,7 @@ from .serializers import (CategorySerializer,
                           GenreSerializer,
                           GetTokenSerializer,
                           NotAdminSerializer,
-                          ReviewReadSerializer, ReviewWriteSerializer,
+                          ReviewSerializer,
                           SignUpSerializer,
                           TitleReadSerializer, TitleWriteSerializer,
                           UserSerializer)
@@ -31,14 +32,16 @@ User = get_user_model()
 
 
 class TitleViewSet(viewsets.ModelViewSet):
-    queryset = Title.objects.all()
+    queryset = Title.objects.all().annotate(
+        Avg('reviews__score')
+    ).order_by("name")
     permission_classes = (IsAdminOrReadOnly,)
     filter_backends = (DjangoFilterBackend,)
     filterset_class = TitleFilter
-    http_method_names = ['get', 'patch', 'post', 'delete']
+    http_method_names = ('get', 'patch', 'post', 'delete')
 
     def get_serializer_class(self):
-        if self.action in ['list', 'retrieve']:
+        if self.action in ('list', 'retrieve'):
             return TitleReadSerializer
         return TitleWriteSerializer
 
@@ -50,7 +53,7 @@ class CategoryViewSet(ListCreateDestroyViewSet):
     filter_backends = (filters.SearchFilter,)
     search_fields = ('name',)
     lookup_field = 'slug'
-    http_method_names = ['get', 'patch', 'post', 'delete']
+    http_method_names = ('get', 'patch', 'post', 'delete')
 
 
 class GenreViewSet(ListCreateDestroyViewSet):
@@ -60,34 +63,31 @@ class GenreViewSet(ListCreateDestroyViewSet):
     filter_backends = (filters.SearchFilter,)
     search_fields = ('name',)
     lookup_field = 'slug'
-    http_method_names = ['get', 'patch', 'post', 'delete']
+    http_method_names = ('get', 'patch', 'post', 'delete')
 
 
 class ReviewViewSet(viewsets.ModelViewSet):
     permission_classes = (IsAdminModeratorOwnerOrReadOnly,)
-    http_method_names = ['get', 'patch', 'post', 'delete']
-
-    def get_serializer_class(self):
-        if self.action in ['list', 'retrieve']:
-            return ReviewReadSerializer
-        return ReviewWriteSerializer
-
-    def get_title(self):
-        return get_object_or_404(Title, pk=self.kwargs.get('title_id'))
+    http_method_names = ('get', 'patch', 'post', 'delete')
+    serializer_class = ReviewSerializer
 
     def get_queryset(self):
-        return self.get_title().reviews.all()
+        title = get_object_or_404(Title, pk=self.kwargs.get('title_id'))
+
+        return title.reviews.all()
 
     def perform_create(self, serializer):
-        serializer.save(author=self.request.user, title=self.get_title())
+        title_id = self.kwargs.get('title_id')
+        title = get_object_or_404(Title, id=title_id)
+        serializer.save(author=self.request.user, title=title)
 
 
 class CommentViewSet(viewsets.ModelViewSet):
     permission_classes = (IsAdminModeratorOwnerOrReadOnly,)
-    http_method_names = ['get', 'patch', 'post', 'delete']
+    http_method_names = ('get', 'patch', 'post', 'delete')
 
     def get_serializer_class(self):
-        if self.action in ['list', 'retrieve']:
+        if self.action in ('list', 'retrieve'):
             return CommentReadSerializer
         return CommentWriteSerializer
 
@@ -114,7 +114,7 @@ class UserViewSet(viewsets.ModelViewSet):
     lookup_field = 'username'
     filter_backends = (SearchFilter, )
     search_fields = ('username', )
-    http_method_names = ['get', 'patch', 'post', 'delete']
+    http_method_names = ('get', 'patch', 'post', 'delete')
 
     @action(
         methods=['GET', 'PATCH'],
