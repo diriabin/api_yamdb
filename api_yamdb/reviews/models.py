@@ -53,7 +53,6 @@ class Title(models.Model):
     )
     genre = models.ManyToManyField(
         Genre,
-        # on_delete=models.SET_NULL,
         verbose_name='Жанры',
         related_name='titles'
     )
@@ -89,6 +88,7 @@ class Review(models.Model):
     pub_date = models.DateTimeField('Дата создания', auto_now_add=True)
 
     class Meta:
+        unique_together = ['author', 'title']
         verbose_name = 'Отзыв'
         verbose_name_plural = 'Отзывы'
         ordering = ['id']

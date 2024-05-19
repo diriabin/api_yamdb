@@ -53,6 +53,12 @@ class UserSerializer(serializers.ModelSerializer):
 
 
 class ReviewReadSerializer(serializers.ModelSerializer):
+    author = serializers.SlugRelatedField(
+        default=serializers.CurrentUserDefault(),
+        slug_field='username',
+        read_only=True
+    )
+
     class Meta:
         model = Review
         fields = '__all__'
@@ -64,7 +70,7 @@ class ReviewWriteSerializer(serializers.ModelSerializer):
         slug_field='username',
         read_only=True
     )
-    title_id = serializers.SlugRelatedField(
+    title = serializers.SlugRelatedField(
         slug_field='name',
         read_only=True,
     )
@@ -74,14 +80,10 @@ class ReviewWriteSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Review
-        fields = ('text', 'score', 'author', 'title_id')
+        fields = ('text', 'score', 'author', 'title')
 
 
-class CommentSerializer(serializers.ModelSerializer):
-    review = serializers.SlugRelatedField(
-        slug_field='text',
-        read_only=True
-    )
+class CommentReadSerializer(serializers.ModelSerializer):
     author = serializers.SlugRelatedField(
         slug_field='username',
         read_only=True
@@ -89,7 +91,29 @@ class CommentSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Comment
-        fields = '__all__'
+        fields = ('id', 'text', 'author', 'pub_date')
+
+
+class CommentWriteSerializer(serializers.ModelSerializer):
+    review = serializers.SlugRelatedField(
+        slug_field='text',
+        read_only=True
+    )
+    title = serializers.SlugRelatedField(
+        slug_field='name',
+        read_only=True,
+    )
+    author = serializers.SlugRelatedField(
+        slug_field='username',
+        read_only=True
+    )
+
+    def to_representation(self, instance):
+        return CommentReadSerializer(instance).data
+
+    class Meta:
+        model = Comment
+        fields = ('text', 'review', 'author', 'title')
 
 
 class GetTokenSerializer(serializers.ModelSerializer):

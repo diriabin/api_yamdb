@@ -1,29 +1,31 @@
-from django.contrib.auth.tokens import default_token_generator
 from django.contrib.auth import get_user_model
+from django.contrib.auth.tokens import default_token_generator
 from django.core.mail import send_mail
 from django.shortcuts import get_object_or_404
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework import filters, status, viewsets
 from rest_framework.decorators import action
+from rest_framework.filters import SearchFilter
+from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework_simplejwt.tokens import RefreshToken
-from rest_framework.permissions import IsAuthenticated, AllowAny
-from rest_framework.filters import SearchFilter
+from reviews.models import Category, Genre, Review, Title
 
-
-from .filters import TitleFilter
-from .permissions import (IsAdminOrReadOnly, IsAdminModeratorOwnerOrReadOnly,
-                          IsAdmin)
-from .serializers import (CategorySerializer, GenreSerializer,
-                          TitleReadSerializer, TitleWriteSerializer,
-                          UserSerializer, CommentSerializer,
-                          ReviewReadSerializer, ReviewWriteSerializer,
-                          GetTokenSerializer, SignUpSerializer,
-                          NotAdminSerializer)
-from reviews.models import Category, Genre, Title, Review
-from .mixins import ListCreateDestroyViewSet
 from api_yamdb.settings import DEFAULT_EMAIL
+from .filters import TitleFilter
+from .mixins import ListCreateDestroyViewSet
+from .permissions import (IsAdmin, IsAdminModeratorOwnerOrReadOnly,
+                          IsAdminOrReadOnly)
+from .serializers import (CategorySerializer,
+                          CommentReadSerializer, CommentWriteSerializer,
+                          GenreSerializer,
+                          GetTokenSerializer,
+                          NotAdminSerializer,
+                          ReviewReadSerializer, ReviewWriteSerializer,
+                          SignUpSerializer,
+                          TitleReadSerializer, TitleWriteSerializer,
+                          UserSerializer)
 
 User = get_user_model()
 
@@ -81,8 +83,13 @@ class ReviewViewSet(viewsets.ModelViewSet):
 
 
 class CommentViewSet(viewsets.ModelViewSet):
-    serializer_class = CommentSerializer
     permission_classes = (IsAdminModeratorOwnerOrReadOnly,)
+    http_method_names = ['get', 'patch', 'post', 'delete']
+
+    def get_serializer_class(self):
+        if self.action in ['list', 'retrieve']:
+            return CommentReadSerializer
+        return CommentWriteSerializer
 
     def get_queryset(self):
         return get_object_or_404(
@@ -92,6 +99,7 @@ class CommentViewSet(viewsets.ModelViewSet):
     def perform_create(self, serializer):
         serializer.save(
             author=self.request.user,
+            title=get_object_or_404(Title, pk=self.kwargs.get('title_id')),
             review=get_object_or_404(
                 Review, id=self.kwargs.get('review_id'),
                 title=self.kwargs.get('title_id')
