@@ -50,7 +50,7 @@ class TitleWriteSerializer(serializers.ModelSerializer):
     class Meta:
         model = Title
         fields = '__all__'
-        read_only_fields = ('rating',)
+        read_only_fields = ('id', 'rating')
 
 
 class UserSerializer(serializers.ModelSerializer):
@@ -85,40 +85,28 @@ class ReviewSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Review
-        fields = '__all__'
+        fields = "__all__"
 
 
-class CommentReadSerializer(serializers.ModelSerializer):
+class CommentSerializer(serializers.ModelSerializer):
     author = serializers.SlugRelatedField(
         slug_field='username',
         read_only=True
     )
-
-    class Meta:
-        model = Comment
-        fields = ('id', 'text', 'author', 'pub_date')
-
-
-class CommentWriteSerializer(serializers.ModelSerializer):
     review = serializers.SlugRelatedField(
         slug_field='text',
         read_only=True
     )
-    title = serializers.SlugRelatedField(
-        slug_field='name',
-        read_only=True,
-    )
-    author = serializers.SlugRelatedField(
-        slug_field='username',
-        read_only=True
-    )
-
-    def to_representation(self, instance):
-        return CommentReadSerializer(instance).data
 
     class Meta:
         model = Comment
-        fields = ('text', 'review', 'author', 'title')
+        fields = ('id', 'text', 'author', 'pub_date', 'review')
+        read_only_fields = ('id',)
+
+    def to_representation(self, instance):
+        representation = super().to_representation(instance)
+        representation.pop('review')
+        return representation
 
 
 class GetTokenSerializer(serializers.ModelSerializer):
@@ -168,10 +156,14 @@ class NotAdminSerializer(serializers.ModelSerializer):
             'last_name', 'bio', 'role')
         read_only_fields = ('role',)
 
-
 # Огромная ошибка проектирования.
 # Представьте, что через API-запрос нужно вернуть 1000 произведений.
 # Для каждого из них будет выполнен (по этой настройке) отдельный запрос в базу для расчета рейтинга.
 # Всего получится 1001 запрос. Это атака на базу! А если нужно вернуть миллион произведений?!
 # Поменяйте подход. Нужно получить за один запрос все рейтинги!
 # Учтите, что база умеет сама считать "средние".
+#
+#
+# Не исправил замечания по REVIEW тк не понял про какую документацию говорит
+#
+# Не менял сериализаторы пользователя и регистрации

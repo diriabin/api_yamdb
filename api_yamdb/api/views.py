@@ -19,14 +19,13 @@ from .mixins import ListCreateDestroyViewSet
 from .permissions import (IsAdmin, IsAdminModeratorOwnerOrReadOnly,
                           IsAdminOrReadOnly)
 from .serializers import (CategorySerializer,
-                          CommentReadSerializer, CommentWriteSerializer,
                           GenreSerializer,
                           GetTokenSerializer,
                           NotAdminSerializer,
                           ReviewSerializer,
                           SignUpSerializer,
                           TitleReadSerializer, TitleWriteSerializer,
-                          UserSerializer)
+                          UserSerializer, CommentSerializer)
 
 User = get_user_model()
 
@@ -85,11 +84,7 @@ class ReviewViewSet(viewsets.ModelViewSet):
 class CommentViewSet(viewsets.ModelViewSet):
     permission_classes = (IsAdminModeratorOwnerOrReadOnly,)
     http_method_names = ('get', 'patch', 'post', 'delete')
-
-    def get_serializer_class(self):
-        if self.action in ('list', 'retrieve'):
-            return CommentReadSerializer
-        return CommentWriteSerializer
+    serializer_class = CommentSerializer
 
     def get_queryset(self):
         return get_object_or_404(
@@ -112,8 +107,8 @@ class UserViewSet(viewsets.ModelViewSet):
     serializer_class = UserSerializer
     permission_classes = (IsAdmin,)
     lookup_field = 'username'
-    filter_backends = (SearchFilter, )
-    search_fields = ('username', )
+    filter_backends = (SearchFilter,)
+    search_fields = ('username',)
     http_method_names = ('get', 'patch', 'post', 'delete')
 
     @action(
