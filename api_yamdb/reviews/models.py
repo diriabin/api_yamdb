@@ -42,9 +42,8 @@ class Genre(models.Model):
 
 
 class Title(models.Model):
-    name = models.CharField(
-        unique=True, max_length=MAX_LENGTH_CHAR, verbose_name='Название'
-    )
+    name = models.CharField(max_length=MAX_LENGTH_CHAR, verbose_name='Название'
+                            )
     year = models.IntegerField(
         verbose_name='Год выпуска'
     )
@@ -53,6 +52,7 @@ class Title(models.Model):
     )
     genre = models.ManyToManyField(
         Genre,
+        # on_delete=models.SET_NULL,
         verbose_name='Жанры',
         related_name='titles'
     )
@@ -63,16 +63,12 @@ class Title(models.Model):
         null=True,
         blank=True,
     )
-    rating = models.IntegerField(
-        verbose_name='Рейтинг',
-        null=True,
-        default=None
-    )
 
     class Meta:
         verbose_name = 'Произведение'
         verbose_name_plural = 'Произведения'
         ordering = ['name']
+        unique_together = ['name', 'year']
 
     def __str__(self):
         return self.name[:SLICE_STR]

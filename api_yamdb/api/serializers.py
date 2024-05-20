@@ -36,6 +36,7 @@ class TitleReadSerializer(serializers.ModelSerializer):
         fields = (
             'id', 'name', 'year', 'rating', 'description', 'genre', 'category'
         )
+        read_only_fields = fields
 
 
 class TitleWriteSerializer(serializers.ModelSerializer):
@@ -49,6 +50,7 @@ class TitleWriteSerializer(serializers.ModelSerializer):
     class Meta:
         model = Title
         fields = '__all__'
+        read_only_fields = ('rating',)
 
 
 class UserSerializer(serializers.ModelSerializer):
@@ -165,3 +167,11 @@ class NotAdminSerializer(serializers.ModelSerializer):
             'username', 'email', 'first_name',
             'last_name', 'bio', 'role')
         read_only_fields = ('role',)
+
+
+# Огромная ошибка проектирования.
+# Представьте, что через API-запрос нужно вернуть 1000 произведений.
+# Для каждого из них будет выполнен (по этой настройке) отдельный запрос в базу для расчета рейтинга.
+# Всего получится 1001 запрос. Это атака на базу! А если нужно вернуть миллион произведений?!
+# Поменяйте подход. Нужно получить за один запрос все рейтинги!
+# Учтите, что база умеет сама считать "средние".
