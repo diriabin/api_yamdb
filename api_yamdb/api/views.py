@@ -1,5 +1,6 @@
+import random
+
 from django.contrib.auth import get_user_model
-from django.contrib.auth.tokens import default_token_generator
 from django.core.mail import send_mail
 from django.shortcuts import get_object_or_404
 from django_filters.rest_framework import DjangoFilterBackend
@@ -161,7 +162,9 @@ class APISignup(APIView):
         serializer.is_valid(raise_exception=True)
         user, _ = User.objects.get_or_create(**serializer.validated_data)
         email = serializer.validated_data.get('email')
-        confirmation_code = default_token_generator.make_token(user)
+        confirmation_code = random.randint(100, 999)
+        user.confirmation_code = confirmation_code
+        user.save()
         send_mail(
             subject='Код подтверждения YaMDb',
             message=f'Ваш код подтверждения: {confirmation_code}',
