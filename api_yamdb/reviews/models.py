@@ -1,10 +1,78 @@
 from django.db import models
-from django.contrib.auth import get_user_model
 from django.core.validators import MinValueValidator, MaxValueValidator
+from django.contrib.auth.models import AbstractUser
 
-from .constans import SLICE_STR, MAX_LENGTH_SLUG, MAX_LENGTH_CHAR
+from .constans import (SLICE_STR, MAX_LENGTH_SLUG, MAX_LENGTH_CHAR,
+                      MAX_LENGTH_USERNAME)
+from .validators import UsernameRegexValidator, username_is_not_me
 
-User = get_user_model()
+
+class User(AbstractUser):
+    USER = 'user'
+    MODERATOR = 'moderator'
+    ADMIN = 'admin'
+
+    ROLES = (
+        (USER, 'Пользователь'),
+        (MODERATOR, 'Модератор'),
+        (ADMIN, 'Администратор'),
+    )
+
+    username = models.CharField(
+        max_length=MAX_LENGTH_USERNAME,
+        unique=True,
+        validators=(UsernameRegexValidator(), username_is_not_me),
+        verbose_name='имя пользователя',
+    )
+    bio = models.TextField(
+        verbose_name='биография', null=True, blank=True
+    )
+    email = models.EmailField(
+        verbose_name='email адрес', unique=True
+    )
+    role = models.CharField(
+        default=USER,
+        choices=ROLES,
+        verbose_name='роль',
+        max_length=max(len(role) for role, _ in ROLES),
+
+    )
+    first_name = models.CharField(
+        'имя',
+        max_length=150,
+        blank=True
+    )
+    last_name = models.CharField(
+        'фамилия',
+        max_length=150,
+        blank=True
+    )
+    confirmation_code = models.CharField(
+        'код подтверждения',
+        max_length=255,
+        null=True,
+        blank=False,
+        default='XXXX'
+    )
+
+    REQUIRED_FIELDS = ('email',)
+
+    class Meta:
+        ordering = ('username',)
+        verbose_name = 'Пользователь'
+        verbose_name_plural = 'Пользователи'
+        unique_together = ('email', 'username',)
+
+    @property
+    def is_moderator(self):
+        return self.role == self.MODERATOR
+
+    @property
+    def is_admin(self):
+        return self.role == self.ADMIN or self.is_superuser or self.is_staff
+
+    def __str__(self):
+        return self.username[:20]
 
 
 class Category(models.Model):
@@ -63,11 +131,6 @@ class Title(models.Model):
         null=True,
         blank=True,
     )
-    rating = models.IntegerField(
-        verbose_name='Рейтинг',
-        null=True,
-        default=None
-    )
 
     class Meta:
         verbose_name = 'Произведение'
@@ -85,23 +148,18 @@ class Review(models.Model):
         verbose_name='Оценка'
     )
     author = models.ForeignKey(
-        User, on_delete=models.CASCADE, related_name='reviews'
+        User, on_delete=models.CASCADE
     )
     title = models.ForeignKey(
-        Title, on_delete=models.CASCADE, related_name='reviews'
+        Title, on_delete=models.CASCADE
     )
     pub_date = models.DateTimeField('Дата создания', auto_now_add=True)
 
     class Meta:
+        default_related_name = 'reviews'
         verbose_name = 'Отзыв'
         verbose_name_plural = 'Отзывы'
-        ordering = ['id']
-        constraints = [
-            models.UniqueConstraint(
-                fields=['title', 'author'],
-                name='unique_review'
-            ),
-        ]
+        unique_together = ('title', 'author',)
 
     def __str__(self):
         return self.text[:SLICE_STR]
