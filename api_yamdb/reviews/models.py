@@ -101,14 +101,14 @@ class CategoryGenreBased(models.Model):
 
 class Category(CategoryGenreBased):
 
-    class Meta:
+    class Meta(CategoryGenreBased.Meta):
         verbose_name = 'Категория'
         verbose_name_plural = 'Категории'
 
 
 class Genre(CategoryGenreBased):
 
-    class Meta:
+    class Meta(CategoryGenreBased.Meta):
         verbose_name = 'Жанр'
         verbose_name_plural = 'Жанры'
 
@@ -184,7 +184,7 @@ class Review(ReviewCommentBased):
         verbose_name='Произведение'
     )
 
-    class Meta:
+    class Meta(ReviewCommentBased.Meta):
         verbose_name = 'Отзыв'
         verbose_name_plural = 'Отзывы'
         default_related_name = 'reviews'
@@ -201,7 +201,7 @@ class Comment(ReviewCommentBased):
         verbose_name='Отзыв'
     )
 
-    class Meta:
+    class Meta(ReviewCommentBased.Meta):
         verbose_name = 'Комментарий'
         verbose_name_plural = 'Комментарии'
         default_related_name = 'comments'
