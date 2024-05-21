@@ -19,6 +19,7 @@ INSTALLED_APPS = [
     'rest_framework',
     'django_filters',
     'djoser',
+    'debug_toolbar',
     'reviews.apps.ReviewsConfig',
     'api.apps.ApiConfig'
 ]
@@ -117,3 +118,7 @@ AUTH_USER_MODEL = 'reviews.User'
 EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
 
 DEFAULT_EMAIL = 'admin@yamdb.com'
+
+INTERNAL_IPS = [
+    "127.0.0.1",
+]

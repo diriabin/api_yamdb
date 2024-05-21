@@ -16,6 +16,7 @@ from api_yamdb.settings import DEFAULT_EMAIL
 from reviews.models import Category, Genre, Review, Title
 from .constans import URL_PATH
 from .filters import TitleFilter
+from .mixins import ListCreateDestroyViewSet
 from .permissions import (IsAdmin, IsAdminModeratorOwnerOrReadOnly,
                           IsAdminOrReadOnly)
 from .serializers import (CategorySerializer,
@@ -33,7 +34,8 @@ User = get_user_model()
 class TitleViewSet(viewsets.ModelViewSet):
     queryset = Title.objects.all().annotate(
         Avg('reviews__score')
-    ).order_by('name')
+    ).order_by('name').select_related('category').prefetch_related(
+        'genre').order_by("name")
     permission_classes = (IsAdminOrReadOnly,)
     filter_backends = (DjangoFilterBackend,)
     filterset_class = TitleFilter
