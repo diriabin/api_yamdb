@@ -3,8 +3,8 @@ from django.core.validators import MinValueValidator, MaxValueValidator
 from django.contrib.auth.models import AbstractUser
 
 from .constans import (SLICE_STR, MAX_LENGTH_SLUG, MAX_LENGTH_CHAR,
-                      MAX_LENGTH_USERNAME, MAX_LENGTH_NAMES, MAX_LENGTH_EMAIL,
-                       MIN_REVIEW_SCORE, MAX_REVIEW_SCORE)
+                       MAX_LENGTH_USERNAME, MAX_LENGTH_NAMES,
+                       MIN_REVIEW_SCORE, MAX_REVIEW_SCORE, CONF_CODE_MAX_LEN)
 from .validators import (UsernameRegexValidator, username_is_not_me,
                          validate_year)
 
@@ -52,7 +52,7 @@ class User(AbstractUser):
         verbose_name='фамилия'
     )
     confirmation_code = models.CharField(
-        max_length=MAX_LENGTH_EMAIL,
+        max_length=CONF_CODE_MAX_LEN,
         null=True,
         blank=False,
         default='XXXX',

@@ -27,6 +27,7 @@ from .serializers import (CategorySerializer,
                           SignUpSerializer,
                           TitleReadSerializer, TitleWriteSerializer,
                           UserSerializer, CommentSerializer)
+from reviews.constans import CONF_CODE_MAX_LEN
 
 User = get_user_model()
 
@@ -162,7 +163,8 @@ class APISignup(APIView):
         serializer.is_valid(raise_exception=True)
         user, _ = User.objects.get_or_create(**serializer.validated_data)
         email = serializer.validated_data.get('email')
-        confirmation_code = random.randint(100, 999)
+        confirmation_code = random.randint(10**(CONF_CODE_MAX_LEN-1),
+                                           (10**CONF_CODE_MAX_LEN-1))
         user.confirmation_code = confirmation_code
         user.save()
         send_mail(

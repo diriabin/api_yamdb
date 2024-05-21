@@ -1,11 +1,15 @@
 from django.contrib.auth import get_user_model
 from django.contrib.auth.validators import UnicodeUsernameValidator
+from django.core.validators import MinLengthValidator, MaxLengthValidator
 from rest_framework import serializers
 from rest_framework.exceptions import ValidationError
 from rest_framework.generics import get_object_or_404
 
 from reviews.models import Category, Genre, Title, Review, Comment
 from reviews.validators import username_is_not_me
+
+from reviews.constans import CONF_CODE_MAX_LEN
+from reviews.validators import UsernameRegexValidator
 
 User = get_user_model()
 
@@ -110,9 +114,17 @@ class CommentSerializer(serializers.ModelSerializer):
 
 class GetTokenSerializer(serializers.ModelSerializer):
     username = serializers.CharField(
-        required=True)
+        required=True,
+        max_length=150,
+        validators=(
+            UsernameRegexValidator(),
+            username_is_not_me
+        )
+    )
     confirmation_code = serializers.CharField(
-        required=True)
+        required=True,
+        max_length=CONF_CODE_MAX_LEN,
+    )
 
     class Meta:
         model = User
