@@ -62,10 +62,6 @@ class UserSerializer(serializers.ModelSerializer):
 
 
 class ReviewSerializer(serializers.ModelSerializer):
-    title = serializers.SlugRelatedField(
-        slug_field='name',
-        read_only=True,
-    )
     author = serializers.SlugRelatedField(
         default=serializers.CurrentUserDefault(),
         slug_field='username',
@@ -85,7 +81,10 @@ class ReviewSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Review
-        fields = "__all__"
+        fields = (
+            'id', 'text', 'author',
+            'score', 'pub_date'
+        )
 
 
 class CommentSerializer(serializers.ModelSerializer):
@@ -162,8 +161,5 @@ class NotAdminSerializer(serializers.ModelSerializer):
 # Всего получится 1001 запрос. Это атака на базу! А если нужно вернуть миллион произведений?!
 # Поменяйте подход. Нужно получить за один запрос все рейтинги!
 # Учтите, что база умеет сама считать "средние".
-#
-#
-# Не исправил замечания по REVIEW тк не понял про какую документацию говорит
 #
 # Не менял сериализаторы пользователя и регистрации
