@@ -159,11 +159,6 @@ class ReviewCommentBased(models.Model):
         on_delete=models.CASCADE,
         verbose_name='Автор'
     )
-    title = models.ForeignKey(
-        Title,
-        on_delete=models.CASCADE,
-        verbose_name='Произведение'
-    )
     pub_date = models.DateTimeField(
         auto_now_add=True,
         verbose_name='Дата создания'
@@ -182,6 +177,11 @@ class Review(ReviewCommentBased):
         validators=[MinValueValidator(MIN_REVIEW_SCORE),
                     MaxValueValidator(MAX_REVIEW_SCORE)],
         verbose_name='Оценка'
+    )
+    title = models.ForeignKey(
+        Title,
+        on_delete=models.CASCADE,
+        verbose_name='Произведение'
     )
 
     class Meta:
