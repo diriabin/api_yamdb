@@ -36,6 +36,7 @@ class TitleReadSerializer(serializers.ModelSerializer):
         fields = (
             'id', 'name', 'year', 'rating', 'description', 'genre', 'category'
         )
+        read_only_fields = fields
 
 
 class TitleWriteSerializer(serializers.ModelSerializer):
@@ -49,6 +50,7 @@ class TitleWriteSerializer(serializers.ModelSerializer):
     class Meta:
         model = Title
         fields = '__all__'
+        read_only_fields = ('id', 'rating')
 
 
 class UserSerializer(serializers.ModelSerializer):
@@ -60,10 +62,6 @@ class UserSerializer(serializers.ModelSerializer):
 
 
 class ReviewSerializer(serializers.ModelSerializer):
-    title = serializers.SlugRelatedField(
-        slug_field='name',
-        read_only=True,
-    )
     author = serializers.SlugRelatedField(
         default=serializers.CurrentUserDefault(),
         slug_field='username',
@@ -83,40 +81,31 @@ class ReviewSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Review
-        fields = '__all__'
+        fields = (
+            'id', 'text', 'author',
+            'score', 'pub_date'
+        )
 
 
-class CommentReadSerializer(serializers.ModelSerializer):
+class CommentSerializer(serializers.ModelSerializer):
     author = serializers.SlugRelatedField(
         slug_field='username',
         read_only=True
     )
-
-    class Meta:
-        model = Comment
-        fields = ('id', 'text', 'author', 'pub_date')
-
-
-class CommentWriteSerializer(serializers.ModelSerializer):
     review = serializers.SlugRelatedField(
         slug_field='text',
         read_only=True
     )
-    title = serializers.SlugRelatedField(
-        slug_field='name',
-        read_only=True,
-    )
-    author = serializers.SlugRelatedField(
-        slug_field='username',
-        read_only=True
-    )
-
-    def to_representation(self, instance):
-        return CommentReadSerializer(instance).data
 
     class Meta:
         model = Comment
-        fields = ('text', 'review', 'author', 'title')
+        fields = ('id', 'text', 'author', 'pub_date', 'review')
+        read_only_fields = ('id',)
+
+    def to_representation(self, instance):
+        representation = super().to_representation(instance)
+        representation.pop('review')
+        return representation
 
 
 class GetTokenSerializer(serializers.ModelSerializer):
@@ -165,3 +154,12 @@ class NotAdminSerializer(serializers.ModelSerializer):
             'username', 'email', 'first_name',
             'last_name', 'bio', 'role')
         read_only_fields = ('role',)
+
+# Огромная ошибка проектирования.
+# Представьте, что через API-запрос нужно вернуть 1000 произведений.
+# Для каждого из них будет выполнен (по этой настройке) отдельный запрос в базу для расчета рейтинга.
+# Всего получится 1001 запрос. Это атака на базу! А если нужно вернуть миллион произведений?!
+# Поменяйте подход. Нужно получить за один запрос все рейтинги!
+# Учтите, что база умеет сама считать "средние".
+#
+# Не менял сериализаторы пользователя и регистрации
