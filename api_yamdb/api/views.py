@@ -16,7 +16,6 @@ from api_yamdb.settings import DEFAULT_EMAIL
 from reviews.models import Category, Genre, Review, Title
 from .constans import URL_PATH
 from .filters import TitleFilter
-from .mixins import ListCreateDestroyViewSet
 from .permissions import (IsAdmin, IsAdminModeratorOwnerOrReadOnly,
                           IsAdminOrReadOnly)
 from .serializers import (CategorySerializer,
