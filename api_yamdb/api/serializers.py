@@ -112,7 +112,7 @@ class CommentSerializer(serializers.ModelSerializer):
         return representation
 
 
-class GetTokenSerializer(serializers.ModelSerializer):
+class GetTokenSerializer(serializers.Serializer):
     username = serializers.CharField(
         required=True,
         max_length=150,
@@ -126,12 +126,6 @@ class GetTokenSerializer(serializers.ModelSerializer):
         max_length=CONF_CODE_MAX_LEN,
     )
 
-    class Meta:
-        model = User
-        fields = (
-            'username',
-            'confirmation_code'
-        )
 
 
 class SignUpSerializer(serializers.Serializer):
@@ -166,7 +160,3 @@ class NotAdminSerializer(serializers.ModelSerializer):
             'username', 'email', 'first_name',
             'last_name', 'bio', 'role')
         read_only_fields = ('role',)
-
-# class GetTokenSerializer(serializers.ModelSerializer):
-# Критическая ошибка!
-# При таком наследовании будет клинч. Подробности в контроллере.
