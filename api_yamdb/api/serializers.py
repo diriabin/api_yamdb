@@ -154,3 +154,7 @@ class NotAdminSerializer(serializers.ModelSerializer):
             'username', 'email', 'first_name',
             'last_name', 'bio', 'role')
         read_only_fields = ('role',)
+
+# class GetTokenSerializer(serializers.ModelSerializer):
+# Критическая ошибка!
+# При таком наследовании будет клинч. Подробности в контроллере.
