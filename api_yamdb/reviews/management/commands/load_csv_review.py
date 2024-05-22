@@ -30,5 +30,5 @@ class Command(BaseCommand):
                     score=row[4],
                     pub_date=row[5],
                 )
-                
+
 # python manage.py load_csv_review --path static/data/review.csv
