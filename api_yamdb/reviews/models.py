@@ -116,7 +116,6 @@ class Genre(CategoryGenreBased):
 class Title(models.Model):
     name = models.CharField(
         max_length=MAX_LENGTH_CHAR,
-        unique=True,
         verbose_name='Название'
     )
     year = models.IntegerField(

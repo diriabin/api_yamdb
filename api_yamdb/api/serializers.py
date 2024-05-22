@@ -1,5 +1,4 @@
 from django.contrib.auth import get_user_model
-from django.contrib.auth.validators import UnicodeUsernameValidator
 from rest_framework import serializers
 from rest_framework.exceptions import ValidationError
 from rest_framework.generics import get_object_or_404
@@ -7,7 +6,8 @@ from rest_framework.generics import get_object_or_404
 from reviews.models import Category, Genre, Title, Review, Comment
 from reviews.validators import username_is_not_me
 
-from reviews.constans import CONF_CODE_MAX_LEN
+from reviews.constans import (CONF_CODE_MAX_LEN, MAX_LENGTH_USERNAME,
+                              MAX_LENGTH_EMAIL)
 from reviews.validators import UsernameRegexValidator
 
 User = get_user_model()
@@ -122,31 +122,30 @@ class SignUpSerializer(serializers.Serializer):
     email = serializers.EmailField(max_length=254)
     username = serializers.CharField(
         max_length=150,
-        validators=(UnicodeUsernameValidator(), username_is_not_me),
+        validators=(UsernameRegexValidator(), username_is_not_me,),
     )
 
-    def validate(self, attrs):
-        email = attrs.get('email')
-        username = attrs.get('username')
-        user_by_name = User.objects.filter(username=username).first()
-        user_by_email = User.objects.filter(email=email).first()
 
-        if user_by_email:
-            if username != user_by_email.username:
-                raise serializers.ValidationError(
-                    'Пользователь с таким email почты уже зарегистрирован.')
-        if user_by_name:
-            if email != user_by_name.email:
-                raise serializers.ValidationError(
-                    'Пользователь с таким именем уже зарегистрирован.')
+class NotAdminSerializer(serializers.Serializer):
+    username = serializers.CharField(
+        max_length=MAX_LENGTH_USERNAME,
+        validators=(UsernameRegexValidator(), username_is_not_me,),
+    )
+    email = serializers.EmailField(
+        max_length=MAX_LENGTH_EMAIL,
+    )
+    first_name = serializers.CharField(max_length=30, required=False)
+    last_name = serializers.CharField(max_length=150, required=False)
+    bio = serializers.CharField(allow_blank=True, required=False)
+    role = serializers.CharField(read_only=True)
 
-        return attrs
-
-
-class NotAdminSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = User
-        fields = (
-            'username', 'email', 'first_name',
-            'last_name', 'bio', 'role')
-        read_only_fields = ('role',)
+    def update(self, instance, validated_data):
+        instance.username = validated_data.get('username', instance.username)
+        instance.email = validated_data.get('email', instance.email)
+        instance.first_name = validated_data.get('first_name',
+                                                 instance.first_name)
+        instance.last_name = validated_data.get('last_name',
+                                                instance.last_name)
+        instance.bio = validated_data.get('bio', instance.bio)
+        instance.save()
+        return instance

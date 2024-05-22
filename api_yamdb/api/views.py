@@ -160,10 +160,26 @@ class APISignup(APIView):
     def post(self, request):
         serializer = SignUpSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
+        email = request.data.get('email')
+        username = request.data.get('username')
+        user_by_name = User.objects.filter(username=username).first()
+        user_by_email = User.objects.filter(email=email).first()
+
+        if user_by_email:
+            if username != user_by_email.username:
+                return Response(
+                    {'Пользователь с таким email почты уже зарегистрирован.'},
+                    status=status.HTTP_400_BAD_REQUEST)
+        if user_by_name:
+            if email != user_by_name.email:
+                return Response(
+                    {'Пользователь с таким именем уже зарегистрирован.'},
+                    status=status.HTTP_400_BAD_REQUEST)
+
         user, _ = User.objects.get_or_create(**serializer.validated_data)
         email = serializer.validated_data.get('email')
-        confirmation_code = random.randint(10**(CONF_CODE_MAX_LEN - 1),
-                                           (10**CONF_CODE_MAX_LEN - 1))
+        confirmation_code = random.randint(10 ** (CONF_CODE_MAX_LEN - 1),
+                                           (10 ** CONF_CODE_MAX_LEN - 1))
         user.confirmation_code = confirmation_code
         user.save()
         send_mail(
