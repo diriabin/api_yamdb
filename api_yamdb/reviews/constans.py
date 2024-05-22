@@ -7,3 +7,5 @@ MIN_REVIEW_SCORE = 1
 MAX_REVIEW_SCORE = 10
 SLICE_STR = 20
 CONF_CODE_MAX_LEN = 5
+FORBIDDEN_USERNAMES = ('me', 'admin', 'superuser')
+FORBIDDEN_CHAR = ('@', '/', '.', '+', '-', ' ')
