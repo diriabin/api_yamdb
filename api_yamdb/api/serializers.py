@@ -149,3 +149,6 @@ class NotAdminSerializer(serializers.Serializer):
         instance.bio = validated_data.get('bio', instance.bio)
         instance.save()
         return instance
+
+    class Meta(UserSerializer.Meta):
+        read_only = ('role',)
