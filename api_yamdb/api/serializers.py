@@ -1,6 +1,5 @@
 from django.contrib.auth import get_user_model
 from django.contrib.auth.validators import UnicodeUsernameValidator
-from django.core.validators import MinLengthValidator, MaxLengthValidator
 from rest_framework import serializers
 from rest_framework.exceptions import ValidationError
 from rest_framework.generics import get_object_or_404
@@ -61,8 +60,8 @@ class UserSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
         fields = (
-            'username', 'email', 'first_name',
-            'last_name', 'bio', 'role')
+            'username', 'email', 'first_name', 'last_name', 'bio', 'role'
+        )
 
 
 class ReviewSerializer(serializers.ModelSerializer):
@@ -85,10 +84,7 @@ class ReviewSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Review
-        fields = (
-            'id', 'text', 'author',
-            'score', 'pub_date'
-        )
+        fields = ('id', 'text', 'author', 'score', 'pub_date')
 
 
 class CommentSerializer(serializers.ModelSerializer):
@@ -96,19 +92,14 @@ class CommentSerializer(serializers.ModelSerializer):
         slug_field='username',
         read_only=True
     )
-    review = serializers.SlugRelatedField(
-        slug_field='text',
-        read_only=True
-    )
 
     class Meta:
         model = Comment
-        fields = ('id', 'text', 'author', 'pub_date', 'review')
+        fields = ('id', 'text', 'author', 'pub_date')
         read_only_fields = ('id',)
 
     def to_representation(self, instance):
         representation = super().to_representation(instance)
-        representation.pop('review')
         return representation
 
 
@@ -125,7 +116,6 @@ class GetTokenSerializer(serializers.Serializer):
         required=True,
         max_length=CONF_CODE_MAX_LEN,
     )
-
 
 
 class SignUpSerializer(serializers.Serializer):

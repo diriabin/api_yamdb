@@ -101,7 +101,6 @@ class CommentViewSet(viewsets.ModelViewSet):
     def perform_create(self, serializer):
         serializer.save(
             author=self.request.user,
-            # title=get_object_or_404(Title, pk=self.kwargs.get('title_id')),
             review=self.get_review()
         )
 
@@ -163,8 +162,8 @@ class APISignup(APIView):
         serializer.is_valid(raise_exception=True)
         user, _ = User.objects.get_or_create(**serializer.validated_data)
         email = serializer.validated_data.get('email')
-        confirmation_code = random.randint(10**(CONF_CODE_MAX_LEN-1),
-                                           (10**CONF_CODE_MAX_LEN-1))
+        confirmation_code = random.randint(10**(CONF_CODE_MAX_LEN - 1),
+                                           (10**CONF_CODE_MAX_LEN - 1))
         user.confirmation_code = confirmation_code
         user.save()
         send_mail(
