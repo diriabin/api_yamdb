@@ -3,31 +3,37 @@ import random
 from django.contrib.auth import get_user_model
 from django.conf import settings
 from django.core.mail import send_mail
+from django.db.models import Avg
 from django.shortcuts import get_object_or_404
 from django_filters.rest_framework import DjangoFilterBackend
-from rest_framework import filters, status, viewsets, mixins
+from rest_framework import filters, mixins, status, viewsets
 from rest_framework.decorators import action
 from rest_framework.filters import SearchFilter
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework_simplejwt.tokens import RefreshToken
-from django.db.models import Avg
 
 from api_yamdb.settings import DEFAULT_EMAIL
-from reviews.models import Category, Genre, Review, Title
 from .constans import URL_PATH
 from .filters import TitleFilter
 from .permissions import (IsAdmin, IsAdminModeratorOwnerOrReadOnly,
                           IsAdminOrReadOnly)
-from .serializers import (CategorySerializer,
-                          GenreSerializer,
-                          GetTokenSerializer,
-                          NotAdminSerializer,
-                          ReviewSerializer,
-                          SignUpSerializer,
-                          TitleReadSerializer, TitleWriteSerializer,
-                          UserSerializer, CommentSerializer)
+
+from .serializers import (
+    CategorySerializer,
+    CommentSerializer,
+    GenreSerializer,
+    GetTokenSerializer,
+    NotAdminSerializer,
+    ReviewSerializer,
+    SignUpSerializer,
+    TitleReadSerializer, TitleWriteSerializer,
+    UserSerializer
+)
+from reviews.constans import CONF_CODE_MAX_LEN
+from reviews.models import Category, Genre, Review, Title
+
 
 User = get_user_model()
 
@@ -36,7 +42,7 @@ class TitleViewSet(viewsets.ModelViewSet):
     queryset = Title.objects.all().annotate(
         Avg('reviews__score')
     ).order_by('name').select_related('category').prefetch_related(
-        'genre').order_by("name")
+        'genre')
     permission_classes = (IsAdminOrReadOnly,)
     filter_backends = (DjangoFilterBackend,)
     filterset_class = TitleFilter
@@ -48,11 +54,12 @@ class TitleViewSet(viewsets.ModelViewSet):
         return TitleWriteSerializer
 
 
-class CategoryGenreBasedViewSet(mixins.ListModelMixin,
-                                mixins.CreateModelMixin,
-                                mixins.DestroyModelMixin,
-                                viewsets.GenericViewSet
-                                ):
+class CategoryGenreBasedViewSet(
+    mixins.ListModelMixin,
+    mixins.CreateModelMixin,
+    mixins.DestroyModelMixin,
+    viewsets.GenericViewSet
+):
     permission_classes = (IsAdminOrReadOnly,)
     filter_backends = (filters.SearchFilter,)
     search_fields = ('name',)
@@ -120,15 +127,17 @@ class UserViewSet(viewsets.ModelViewSet):
         permission_classes=(IsAuthenticated,),
         url_path=URL_PATH)
     def get_current_user_info(self, request):
-        if request.method == 'PATCH':
-            serializer = NotAdminSerializer(
-                request.user,
-                data=request.data,
-                partial=True)
-            serializer.is_valid(raise_exception=True)
-            serializer.save()
-            return Response(serializer.data, status=status.HTTP_200_OK)
-        serializer = UserSerializer(request.user)
+        if request.method == 'GET':
+            return Response(
+                UserSerializer(request.user).data,
+                status=status.HTTP_200_OK
+            )
+        serializer = NotAdminSerializer(
+            request.user,
+            data=request.data,
+            partial=True)
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
         return Response(serializer.data, status=status.HTTP_200_OK)
 
 
