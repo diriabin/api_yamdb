@@ -1,11 +1,12 @@
 from django.db import models
 from django.core.validators import MinValueValidator, MaxValueValidator
 from django.contrib.auth.models import AbstractUser
+from django.conf import settings
 
 from .constans import (SLICE_STR, MAX_LENGTH_SLUG, MAX_LENGTH_CHAR,
                        MAX_LENGTH_USERNAME, MAX_LENGTH_NAMES,
-                       MIN_REVIEW_SCORE, MAX_REVIEW_SCORE, CONF_CODE_MAX_LEN)
-from .validators import (UsernameRegexValidator, username_is_not_me,
+                       MIN_REVIEW_SCORE, MAX_REVIEW_SCORE)
+from .validators import (validate_username, username_is_not_me,
                          validate_year)
 
 
@@ -23,7 +24,7 @@ class User(AbstractUser):
     username = models.CharField(
         max_length=MAX_LENGTH_USERNAME,
         unique=True,
-        validators=(UsernameRegexValidator(), username_is_not_me,),
+        validators=(validate_username, username_is_not_me,),
         verbose_name='имя пользователя',
     )
     bio = models.TextField(
@@ -52,7 +53,7 @@ class User(AbstractUser):
         verbose_name='фамилия'
     )
     confirmation_code = models.CharField(
-        max_length=CONF_CODE_MAX_LEN,
+        max_length=settings.CONF_CODE_MAX_LEN,
         null=True,
         blank=False,
         default='XXXX',
@@ -65,7 +66,12 @@ class User(AbstractUser):
         verbose_name = 'Пользователь'
         verbose_name_plural = 'Пользователи'
         ordering = ('username',)
-        unique_together = ('email', 'username',)
+        constraints = [
+            models.UniqueConstraint(
+                fields=["email", "username"],
+                name="unique_email_username",
+            ),
+        ]
 
     @property
     def is_moderator(self):
@@ -73,13 +79,13 @@ class User(AbstractUser):
 
     @property
     def is_admin(self):
-        return self.role == self.ADMIN or self.is_superuser or self.is_staff
+        return self.role == self.ADMIN or self.is_staff
 
     def __str__(self):
         return self.username[:SLICE_STR]
 
 
-class CategoryGenreBased(models.Model):
+class NameSlugBased(models.Model):
     name = models.CharField(
         max_length=MAX_LENGTH_CHAR,
         unique=True,
@@ -99,16 +105,14 @@ class CategoryGenreBased(models.Model):
         return self.name[:SLICE_STR]
 
 
-class Category(CategoryGenreBased):
-
-    class Meta(CategoryGenreBased.Meta):
+class Category(NameSlugBased):
+    class Meta(NameSlugBased.Meta):
         verbose_name = 'Категория'
         verbose_name_plural = 'Категории'
 
 
-class Genre(CategoryGenreBased):
-
-    class Meta(CategoryGenreBased.Meta):
+class Genre(NameSlugBased):
+    class Meta(NameSlugBased.Meta):
         verbose_name = 'Жанр'
         verbose_name_plural = 'Жанры'
 
@@ -144,19 +148,25 @@ class Title(models.Model):
         default_related_name = 'titles'
         ordering = ('name',)
         unique_together = ('name', 'year',)
+        constraints = [
+            models.UniqueConstraint(
+                fields=["name", "year"],
+                name="unique_name_year",
+            ),
+        ]
 
     def __str__(self):
         return self.name[:SLICE_STR]
 
 
-class ReviewCommentBased(models.Model):
+class TextAutorPubDataBased(models.Model):
     text = models.TextField(
         verbose_name='Текст'
     )
     author = models.ForeignKey(
         User,
         on_delete=models.CASCADE,
-        verbose_name='Автор'
+        verbose_name='Автор',
     )
     pub_date = models.DateTimeField(
         auto_now_add=True,
@@ -166,12 +176,13 @@ class ReviewCommentBased(models.Model):
     class Meta:
         abstract = True
         ordering = ('-pub_date',)
+        default_related_name = '%(model_name)ss'
 
     def __str__(self):
         return self.text[:SLICE_STR]
 
 
-class Review(ReviewCommentBased):
+class Review(TextAutorPubDataBased):
     score = models.PositiveSmallIntegerField(
         validators=[MinValueValidator(MIN_REVIEW_SCORE),
                     MaxValueValidator(MAX_REVIEW_SCORE)],
@@ -183,24 +194,19 @@ class Review(ReviewCommentBased):
         verbose_name='Произведение'
     )
 
-    class Meta(ReviewCommentBased.Meta):
+    class Meta(TextAutorPubDataBased.Meta):
         verbose_name = 'Отзыв'
         verbose_name_plural = 'Отзывы'
-        default_related_name = 'reviews'
         unique_together = ('title', 'author',)
 
 
-class Comment(ReviewCommentBased):
-    text = models.TextField(
-        verbose_name='Текст'
-    )
+class Comment(TextAutorPubDataBased):
     review = models.ForeignKey(
         Review,
         on_delete=models.CASCADE,
         verbose_name='Отзыв'
     )
 
-    class Meta(ReviewCommentBased.Meta):
+    class Meta(TextAutorPubDataBased.Meta):
         verbose_name = 'Комментарий'
         verbose_name_plural = 'Комментарии'
-        default_related_name = 'comments'

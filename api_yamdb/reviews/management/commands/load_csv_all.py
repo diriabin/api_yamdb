@@ -17,4 +17,4 @@ class Command(BaseCommand):
         for command, path in commands:
             call_command(command, path=path)
 
-# python manage.py load_csv_
+# python manage.py load_csv_all

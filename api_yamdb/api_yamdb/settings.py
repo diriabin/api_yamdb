@@ -78,7 +78,7 @@ AUTH_PASSWORD_VALIDATORS = [
     },
 ]
 
-LANGUAGE_CODE = 'en-us'
+LANGUAGE_CODE = 'ru-RU'
 
 TIME_ZONE = 'UTC'
 
@@ -123,3 +123,9 @@ DEFAULT_EMAIL = 'admin@yamdb.com'
 INTERNAL_IPS = [
     "127.0.0.1",
 ]
+
+CONF_CODE_MAX_LEN = 5
+
+URL_MY_PAGE = 'me'
+
+DIGS = '1234567890'

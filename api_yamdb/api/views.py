@@ -1,42 +1,49 @@
 import random
 
 from django.contrib.auth import get_user_model
+from django.conf import settings
 from django.core.mail import send_mail
+from django.db.models import Avg, Q
 from django.shortcuts import get_object_or_404
 from django_filters.rest_framework import DjangoFilterBackend
-from rest_framework import filters, status, viewsets, mixins
+from rest_framework import filters, mixins, status, viewsets
 from rest_framework.decorators import action
+from rest_framework.exceptions import ValidationError
 from rest_framework.filters import SearchFilter
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework_simplejwt.tokens import RefreshToken
-from django.db.models import Avg
 
-from api_yamdb.settings import DEFAULT_EMAIL
-from reviews.models import Category, Genre, Review, Title
-from .constans import URL_PATH
 from .filters import TitleFilter
 from .permissions import (IsAdmin, IsAdminModeratorOwnerOrReadOnly,
                           IsAdminOrReadOnly)
-from .serializers import (CategorySerializer,
-                          GenreSerializer,
-                          GetTokenSerializer,
-                          NotAdminSerializer,
-                          ReviewSerializer,
-                          SignUpSerializer,
-                          TitleReadSerializer, TitleWriteSerializer,
-                          UserSerializer, CommentSerializer)
-from reviews.constans import CONF_CODE_MAX_LEN
+from .serializers import (
+    CategorySerializer,
+    CommentSerializer,
+    GenreSerializer,
+    GetTokenSerializer,
+    NotAdminSerializer,
+    ReviewSerializer,
+    SignUpSerializer,
+    TitleReadSerializer, TitleWriteSerializer,
+    UserSerializer
+)
+from reviews.models import Category, Genre, Review, Title
 
 User = get_user_model()
-
+# Author.objects.aggregate(average_rating=Avg('book__rating'))
 
 class TitleViewSet(viewsets.ModelViewSet):
-    queryset = Title.objects.all().annotate(
-        Avg('reviews__score')
-    ).order_by('name').select_related('category').prefetch_related(
-        'genre').order_by("name")
+    queryset = Title.objects.annotate(
+        rating=Avg('reviews__score')
+    ).order_by(
+        Title._meta.ordering[0]
+    ).select_related(
+        'category'
+    ).prefetch_related(
+        'genre'
+    )
     permission_classes = (IsAdminOrReadOnly,)
     filter_backends = (DjangoFilterBackend,)
     filterset_class = TitleFilter
@@ -48,11 +55,12 @@ class TitleViewSet(viewsets.ModelViewSet):
         return TitleWriteSerializer
 
 
-class CategoryGenreBasedViewSet(mixins.ListModelMixin,
-                                mixins.CreateModelMixin,
-                                mixins.DestroyModelMixin,
-                                viewsets.GenericViewSet
-                                ):
+class PermittedMethodsAndSearchFilterViewSet(
+    mixins.ListModelMixin,
+    mixins.CreateModelMixin,
+    mixins.DestroyModelMixin,
+    viewsets.GenericViewSet
+):
     permission_classes = (IsAdminOrReadOnly,)
     filter_backends = (filters.SearchFilter,)
     search_fields = ('name',)
@@ -60,12 +68,12 @@ class CategoryGenreBasedViewSet(mixins.ListModelMixin,
     http_method_names = ('get', 'patch', 'post', 'delete')
 
 
-class CategoryViewSet(CategoryGenreBasedViewSet):
+class CategoryViewSet(PermittedMethodsAndSearchFilterViewSet):
     queryset = Category.objects.all()
     serializer_class = CategorySerializer
 
 
-class GenreViewSet(CategoryGenreBasedViewSet):
+class GenreViewSet(PermittedMethodsAndSearchFilterViewSet):
     queryset = Genre.objects.all()
     serializer_class = GenreSerializer
 
@@ -118,17 +126,19 @@ class UserViewSet(viewsets.ModelViewSet):
         methods=['GET', 'PATCH'],
         detail=False,
         permission_classes=(IsAuthenticated,),
-        url_path=URL_PATH)
+        url_path=settings.URL_MY_PAGE)
     def get_current_user_info(self, request):
-        if request.method == 'PATCH':
-            serializer = NotAdminSerializer(
-                request.user,
-                data=request.data,
-                partial=True)
-            serializer.is_valid(raise_exception=True)
-            serializer.save()
-            return Response(serializer.data, status=status.HTTP_200_OK)
-        serializer = UserSerializer(request.user)
+        if request.method == 'GET':
+            return Response(
+                UserSerializer(request.user).data,
+                status=status.HTTP_200_OK
+            )
+        serializer = NotAdminSerializer(
+            request.user,
+            data=request.data,
+            partial=True)
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
         return Response(serializer.data, status=status.HTTP_200_OK)
 
 
@@ -139,19 +149,18 @@ class APIGetToken(APIView):
         serializer = GetTokenSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         data = serializer.validated_data
-        try:
-            user = User.objects.get(username=data['username'])
-        except User.DoesNotExist:
-            return Response(
-                {'username': 'Пользователь не найден!'},
-                status=status.HTTP_404_NOT_FOUND)
+        user = get_object_or_404(User, username=data['username'])
+        if not user.confirmation_code:
+            raise ValidationError(
+                'Ошибка. Сначала получите код подтверждения.'
+            )
         if data.get('confirmation_code') == user.confirmation_code:
             token = RefreshToken.for_user(user).access_token
             return Response({'token': str(token)},
                             status=status.HTTP_201_CREATED)
-        return Response(
-            {'confirmation_code': 'Неверный код подтверждения!'},
-            status=status.HTTP_400_BAD_REQUEST)
+        user.confirmation_code = None
+        user.save()
+        raise ValidationError('Неверно! запросите новый код подтверждения')
 
 
 class APISignup(APIView):
@@ -162,30 +171,34 @@ class APISignup(APIView):
         serializer.is_valid(raise_exception=True)
         email = request.data.get('email')
         username = request.data.get('username')
-        user_by_name = User.objects.filter(username=username).first()
-        user_by_email = User.objects.filter(email=email).first()
 
-        if user_by_email:
-            if username != user_by_email.username:
-                return Response(
-                    {'Пользователь с таким email почты уже зарегистрирован.'},
-                    status=status.HTTP_400_BAD_REQUEST)
-        if user_by_name:
-            if email != user_by_name.email:
-                return Response(
-                    {'Пользователь с таким именем уже зарегистрирован.'},
-                    status=status.HTTP_400_BAD_REQUEST)
+        error_message = []
+        exist_user = User.objects.filter(
+            Q(username=username) | Q(email=email)
+        )
+        if exist_user:
+            user_by_name = exist_user.filter(username=username).first()
+            user_by_email = exist_user.filter(email=email).first()
+            if user_by_email and username != user_by_email.username:
+                error_message.append(
+                    'Пользователь с таким email уже зарегистрирован.')
+            if user_by_name and email != user_by_name.email:
+                error_message.append(
+                    'Пользователь с таким именем уже зарегистрирован.')
+            if error_message:
+                raise ValidationError(' '.join(error_message))
 
         user, _ = User.objects.get_or_create(**serializer.validated_data)
-        email = serializer.validated_data.get('email')
-        confirmation_code = random.randint(10 ** (CONF_CODE_MAX_LEN - 1),
-                                           (10 ** CONF_CODE_MAX_LEN - 1))
-        user.confirmation_code = confirmation_code
+        user.confirmation_code = "".join(
+            [random.choice(settings.DIGS) for _ in range(
+                settings.CONF_CODE_MAX_LEN
+            )]
+        )
         user.save()
         send_mail(
             subject='Код подтверждения YaMDb',
-            message=f'Ваш код подтверждения: {confirmation_code}',
-            from_email=DEFAULT_EMAIL,
+            message=f'Ваш код подтверждения: {user.confirmation_code}',
+            from_email=settings.DEFAULT_EMAIL,
             recipient_list=(email,),
         )
         return Response(serializer.data, status=status.HTTP_200_OK)

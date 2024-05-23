@@ -1,31 +1,32 @@
 from datetime import datetime
 
 from django.core.exceptions import ValidationError
-from django.contrib.auth.validators import UnicodeUsernameValidator
+
+from reviews.constans import FORBIDDEN_USERNAMES, FORBIDDEN_CHAR
 
 
-class UsernameRegexValidator(UnicodeUsernameValidator):
-    regex = r'^[\w.@+-]+\Z'
-    flags = 0
-    message = ('Введите правильное имя пользователя. Оно может содержать'
-               ' только буквы, цифры и знаки @/./+/-/_.')
-    error_messages = {
-        'invalid': 'Только буквы, цифры и @/./+/-/_',
-        'required': 'Поле не может быть пустым',
-    }
+def validate_username(value):
+    invalid_chars = []
+    for char in set(value):
+        if char in FORBIDDEN_CHAR:
+            invalid_chars.append(char)
+    if invalid_chars:
+        msg = f'Имя содержит запрещенные символы {",".join(invalid_chars)}'
+        raise ValidationError(msg)
 
 
 def username_is_not_me(value):
-    if value == 'me':
+    if value in FORBIDDEN_USERNAMES:
         raise ValidationError(
-            'Имя пользователя "me" не разрешено.'
+            f'Имя пользователя {value} не разрешено.'
         )
     return value
 
 
 def validate_year(value):
+    current_year = datetime.now().year
     if value >= datetime.now().year:
         raise ValidationError(
-            message=f'Год {value} больше текущего!',
-            params={'value': value},
+            message=f'Год {value} больше {current_year}!',
         )
+    return value

@@ -1,14 +1,45 @@
 from django.contrib import admin
-from django.contrib.auth.admin import UserAdmin
 
-from .models import User
+from .models import Category, User, Genre, Title, Review, Comment
 
 
-class UserAdmin(UserAdmin):
-    model = User
+@admin.register(User)
+class UserAdmin(admin.ModelAdmin):
     list_display = [
         'username', 'first_name', 'last_name', 'email', 'bio', 'role',
     ]
 
 
-admin.site.register(User, UserAdmin)
+@admin.register(Category)
+class CategoryAdmin(admin.ModelAdmin):
+    list_display = [
+        'name', 'slug'
+    ]
+
+
+@admin.register(Genre)
+class GenreAdmin(admin.ModelAdmin):
+    list_display = [
+        'name', 'slug'
+    ]
+
+
+@admin.register(Title)
+class TitleAdmin(admin.ModelAdmin):
+    list_display = [
+        'name', 'year', 'description', 'category'
+    ]
+
+
+@admin.register(Review)
+class ReviewAdmin(admin.ModelAdmin):
+    list_display = [
+        'text', 'author', 'pub_date', 'score', 'title',
+    ]
+
+
+@admin.register(Comment)
+class CommentAdmin(admin.ModelAdmin):
+    list_display = [
+        'text', 'author', 'pub_date', 'review'
+    ]
