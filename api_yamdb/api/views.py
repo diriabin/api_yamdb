@@ -38,8 +38,9 @@ User = get_user_model()
 class TitleViewSet(viewsets.ModelViewSet):
     queryset = Title.objects.all().annotate(
         Avg('reviews__score')
-    ).order_by('name').select_related('category').prefetch_related(
-        'genre')
+    ).order_by(
+        Title._meta.ordering[0]
+    ).select_related('category').prefetch_related('genre')
     permission_classes = (IsAdminOrReadOnly,)
     filter_backends = (DjangoFilterBackend,)
     filterset_class = TitleFilter
@@ -51,7 +52,7 @@ class TitleViewSet(viewsets.ModelViewSet):
         return TitleWriteSerializer
 
 
-class CategoryGenreBasedViewSet(
+class PermittedMethodsAndSearchFilterViewSet(
     mixins.ListModelMixin,
     mixins.CreateModelMixin,
     mixins.DestroyModelMixin,
@@ -64,12 +65,12 @@ class CategoryGenreBasedViewSet(
     http_method_names = ('get', 'patch', 'post', 'delete')
 
 
-class CategoryViewSet(CategoryGenreBasedViewSet):
+class CategoryViewSet(PermittedMethodsAndSearchFilterViewSet):
     queryset = Category.objects.all()
     serializer_class = CategorySerializer
 
 
-class GenreViewSet(CategoryGenreBasedViewSet):
+class GenreViewSet(PermittedMethodsAndSearchFilterViewSet):
     queryset = Genre.objects.all()
     serializer_class = GenreSerializer
 
@@ -145,12 +146,7 @@ class APIGetToken(APIView):
         serializer = GetTokenSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         data = serializer.validated_data
-        try:
-            user = User.objects.get(username=data['username'])
-        except User.DoesNotExist:
-            return Response(
-                {'username': 'Пользователь не найден!'},
-                status=status.HTTP_404_NOT_FOUND)
+        user = get_object_or_404(User, username=data['username'])
         if data.get('confirmation_code') == user.confirmation_code:
             token = RefreshToken.for_user(user).access_token
             return Response({'token': str(token)},

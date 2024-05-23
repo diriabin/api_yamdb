@@ -4,8 +4,7 @@ from rest_framework.exceptions import ValidationError
 from rest_framework.generics import get_object_or_404
 
 from .mixins import UsernameMixin
-from reviews.constans import (CONF_CODE_MAX_LEN, MAX_LENGTH_USERNAME,
-                              MAX_LENGTH_EMAIL)
+from reviews.constans import (CONF_CODE_MAX_LEN, MAX_LENGTH_EMAIL)
 from reviews.models import Category, Genre, Title, Review, Comment
 
 User = get_user_model()
@@ -75,7 +74,8 @@ class ReviewSerializer(serializers.ModelSerializer):
             if Review.objects.filter(
                     title=get_object_or_404(
                         Title, pk=self.context['view'].kwargs.get('title_id')
-                    ), author=request.user
+                    ),
+                    author=request.user
             ).exists():
                 raise ValidationError('Вы не можете добавить более'
                                       'одного отзыва на произведение')
