@@ -19,7 +19,6 @@ from .constans import URL_PATH
 from .filters import TitleFilter
 from .permissions import (IsAdmin, IsAdminModeratorOwnerOrReadOnly,
                           IsAdminOrReadOnly)
-
 from .serializers import (
     CategorySerializer,
     CommentSerializer,
@@ -31,9 +30,7 @@ from .serializers import (
     TitleReadSerializer, TitleWriteSerializer,
     UserSerializer
 )
-from reviews.constans import CONF_CODE_MAX_LEN
 from reviews.models import Category, Genre, Review, Title
-
 
 User = get_user_model()
 
