@@ -100,14 +100,12 @@ class CategoryGenreBased(models.Model):
 
 
 class Category(CategoryGenreBased):
-
     class Meta(CategoryGenreBased.Meta):
         verbose_name = 'Категория'
         verbose_name_plural = 'Категории'
 
 
 class Genre(CategoryGenreBased):
-
     class Meta(CategoryGenreBased.Meta):
         verbose_name = 'Жанр'
         verbose_name_plural = 'Жанры'
@@ -149,14 +147,14 @@ class Title(models.Model):
         return self.name[:SLICE_STR]
 
 
-class ReviewCommentBased(models.Model):
+class TextAutorPubDataBased(models.Model):
     text = models.TextField(
         verbose_name='Текст'
     )
     author = models.ForeignKey(
         User,
         on_delete=models.CASCADE,
-        verbose_name='Автор'
+        verbose_name='Автор',
     )
     pub_date = models.DateTimeField(
         auto_now_add=True,
@@ -166,12 +164,13 @@ class ReviewCommentBased(models.Model):
     class Meta:
         abstract = True
         ordering = ('-pub_date',)
+        default_related_name = '%(model_name)ss'
 
     def __str__(self):
         return self.text[:SLICE_STR]
 
 
-class Review(ReviewCommentBased):
+class Review(TextAutorPubDataBased):
     score = models.PositiveSmallIntegerField(
         validators=[MinValueValidator(MIN_REVIEW_SCORE),
                     MaxValueValidator(MAX_REVIEW_SCORE)],
@@ -183,14 +182,13 @@ class Review(ReviewCommentBased):
         verbose_name='Произведение'
     )
 
-    class Meta(ReviewCommentBased.Meta):
+    class Meta(TextAutorPubDataBased.Meta):
         verbose_name = 'Отзыв'
         verbose_name_plural = 'Отзывы'
-        default_related_name = 'reviews'
         unique_together = ('title', 'author',)
 
 
-class Comment(ReviewCommentBased):
+class Comment(TextAutorPubDataBased):
     text = models.TextField(
         verbose_name='Текст'
     )
@@ -200,7 +198,6 @@ class Comment(ReviewCommentBased):
         verbose_name='Отзыв'
     )
 
-    class Meta(ReviewCommentBased.Meta):
+    class Meta(TextAutorPubDataBased.Meta):
         verbose_name = 'Комментарий'
         verbose_name_plural = 'Комментарии'
-        default_related_name = 'comments'
