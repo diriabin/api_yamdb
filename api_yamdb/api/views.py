@@ -2,20 +2,19 @@ import random
 
 from django.contrib.auth import get_user_model
 from django.conf import settings
-from django.core.handlers import exception
 from django.core.mail import send_mail
-from django.db.models import Avg
+from django.db.models import Avg, Q
 from django.shortcuts import get_object_or_404
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework import filters, mixins, status, viewsets
 from rest_framework.decorators import action
+from rest_framework.exceptions import ValidationError
 from rest_framework.filters import SearchFilter
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
-from rest_framework_simplejwt.tokens import AccessToken, RefreshToken
+from rest_framework_simplejwt.tokens import RefreshToken
 
-from api_yamdb.settings import DEFAULT_EMAIL, CONF_CODE_MAX_LEN, DIGS
 from .filters import TitleFilter
 from .permissions import (IsAdmin, IsAdminModeratorOwnerOrReadOnly,
                           IsAdminOrReadOnly)
@@ -33,11 +32,11 @@ from .serializers import (
 from reviews.models import Category, Genre, Review, Title
 
 User = get_user_model()
-
+# Author.objects.aggregate(average_rating=Avg('book__rating'))
 
 class TitleViewSet(viewsets.ModelViewSet):
     queryset = Title.objects.annotate(
-        Avg('reviews__score')
+        rating=Avg('reviews__score')
     ).order_by(
         Title._meta.ordering[0]
     ).select_related(
@@ -151,13 +150,17 @@ class APIGetToken(APIView):
         serializer.is_valid(raise_exception=True)
         data = serializer.validated_data
         user = get_object_or_404(User, username=data['username'])
+        if not user.confirmation_code:
+            raise ValidationError(
+                'Ошибка. Сначала получите код подтверждения.'
+            )
         if data.get('confirmation_code') == user.confirmation_code:
             token = RefreshToken.for_user(user).access_token
             return Response({'token': str(token)},
                             status=status.HTTP_201_CREATED)
-        user.confirmation_code = (random.choice(DIGS) for _ in range(
-            CONF_CODE_MAX_LEN))
-        raise exception.BadRequest()
+        user.confirmation_code = None
+        user.save()
+        raise ValidationError('Неверно! запросите новый код подтверждения')
 
 
 class APISignup(APIView):
@@ -168,27 +171,34 @@ class APISignup(APIView):
         serializer.is_valid(raise_exception=True)
         email = request.data.get('email')
         username = request.data.get('username')
-        user_by_name = User.objects.filter(username=username).first()
-        user_by_email = User.objects.filter(email=email).first()
 
-        if user_by_email:
-            if username != user_by_email.username:
-                return Response(
-                    {'Пользователь с таким email почты уже зарегистрирован.'},
-                    status=status.HTTP_400_BAD_REQUEST)
-        if user_by_name:
-            if email != user_by_name.email:
-                return Response(
-                    {'Пользователь с таким именем уже зарегистрирован.'},
-                    status=status.HTTP_400_BAD_REQUEST)
+        error_message = []
+        exist_user = User.objects.filter(
+            Q(username=username) | Q(email=email)
+        )
+        if exist_user:
+            user_by_name = exist_user.filter(username=username).first()
+            user_by_email = exist_user.filter(email=email).first()
+            if user_by_email and username != user_by_email.username:
+                error_message.append(
+                    'Пользователь с таким email уже зарегистрирован.')
+            if user_by_name and email != user_by_name.email:
+                error_message.append(
+                    'Пользователь с таким именем уже зарегистрирован.')
+            if error_message:
+                raise ValidationError(' '.join(error_message))
+
         user, _ = User.objects.get_or_create(**serializer.validated_data)
-        user.confirmation_code = "".join([random.choice(DIGS) for _ in range(
-            CONF_CODE_MAX_LEN)])
+        user.confirmation_code = "".join(
+            [random.choice(settings.DIGS) for _ in range(
+                settings.CONF_CODE_MAX_LEN
+            )]
+        )
         user.save()
         send_mail(
             subject='Код подтверждения YaMDb',
             message=f'Ваш код подтверждения: {user.confirmation_code}',
-            from_email=DEFAULT_EMAIL,
+            from_email=settings.DEFAULT_EMAIL,
             recipient_list=(email,),
         )
         return Response(serializer.data, status=status.HTTP_200_OK)

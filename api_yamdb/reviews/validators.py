@@ -7,8 +7,8 @@ from reviews.constans import FORBIDDEN_USERNAMES, FORBIDDEN_CHAR
 
 def validate_username(value):
     invalid_chars = []
-    for char in value:
-        if char in set(FORBIDDEN_CHAR):
+    for char in set(value):
+        if char in FORBIDDEN_CHAR:
             invalid_chars.append(char)
     if invalid_chars:
         msg = f'Имя содержит запрещенные символы {",".join(invalid_chars)}'
