@@ -1,6 +1,7 @@
 import random
 
 from django.contrib.auth import get_user_model
+from django.conf import settings
 from django.core.mail import send_mail
 from django.db.models import Avg
 from django.shortcuts import get_object_or_404
@@ -29,7 +30,6 @@ from .serializers import (
     TitleReadSerializer, TitleWriteSerializer,
     UserSerializer
 )
-from reviews.constans import CONF_CODE_MAX_LEN
 from reviews.models import Category, Genre, Review, Title
 
 User = get_user_model()
@@ -184,8 +184,10 @@ class APISignup(APIView):
 
         user, _ = User.objects.get_or_create(**serializer.validated_data)
         email = serializer.validated_data.get('email')
-        confirmation_code = random.randint(10 ** (CONF_CODE_MAX_LEN - 1),
-                                           (10 ** CONF_CODE_MAX_LEN - 1))
+        confirmation_code = random.randint(
+            10 ** (settings.CONF_CODE_MAX_LEN - 1),
+            (10 ** settings.CONF_CODE_MAX_LEN - 1)
+        )
         user.confirmation_code = confirmation_code
         user.save()
         send_mail(

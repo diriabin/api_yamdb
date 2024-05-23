@@ -1,12 +1,13 @@
 from django.contrib.auth import get_user_model
+from  django.conf import settings
 from rest_framework import serializers
 from rest_framework.exceptions import ValidationError
 from rest_framework.generics import get_object_or_404
 
 from .mixins import UsernameMixin
-from reviews.constans import (CONF_CODE_MAX_LEN, MAX_LENGTH_USERNAME,
-                              MAX_LENGTH_EMAIL)
+from reviews.constans import MAX_LENGTH_USERNAME, MAX_LENGTH_EMAIL
 from reviews.models import Category, Genre, Title, Review, Comment
+
 
 User = get_user_model()
 
@@ -101,7 +102,7 @@ class GetTokenSerializer(serializers.Serializer, UsernameMixin):
 
     confirmation_code = serializers.CharField(
         required=True,
-        max_length=CONF_CODE_MAX_LEN,
+        max_length=settings.CONF_CODE_MAX_LEN,
     )
 
 
