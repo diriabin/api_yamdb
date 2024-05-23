@@ -2,6 +2,7 @@ import random
 
 from django.contrib.auth import get_user_model
 from django.conf import settings
+from django.core.handlers import exception
 from django.core.mail import send_mail
 from django.db.models import Avg
 from django.shortcuts import get_object_or_404
@@ -12,9 +13,9 @@ from rest_framework.filters import SearchFilter
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
-from rest_framework_simplejwt.tokens import RefreshToken
+from rest_framework_simplejwt.tokens import AccessToken, RefreshToken
 
-from api_yamdb.settings import DEFAULT_EMAIL
+from api_yamdb.settings import DEFAULT_EMAIL, CONF_CODE_MAX_LEN, DIGS
 from .filters import TitleFilter
 from .permissions import (IsAdmin, IsAdminModeratorOwnerOrReadOnly,
                           IsAdminOrReadOnly)
@@ -35,11 +36,15 @@ User = get_user_model()
 
 
 class TitleViewSet(viewsets.ModelViewSet):
-    queryset = Title.objects.all().annotate(
+    queryset = Title.objects.annotate(
         Avg('reviews__score')
     ).order_by(
         Title._meta.ordering[0]
-    ).select_related('category').prefetch_related('genre')
+    ).select_related(
+        'category'
+    ).prefetch_related(
+        'genre'
+    )
     permission_classes = (IsAdminOrReadOnly,)
     filter_backends = (DjangoFilterBackend,)
     filterset_class = TitleFilter
@@ -150,9 +155,9 @@ class APIGetToken(APIView):
             token = RefreshToken.for_user(user).access_token
             return Response({'token': str(token)},
                             status=status.HTTP_201_CREATED)
-        return Response(
-            {'confirmation_code': 'Неверный код подтверждения!'},
-            status=status.HTTP_400_BAD_REQUEST)
+        user.confirmation_code = (random.choice(DIGS) for _ in range(
+            CONF_CODE_MAX_LEN))
+        raise exception.BadRequest()
 
 
 class APISignup(APIView):
@@ -176,18 +181,13 @@ class APISignup(APIView):
                 return Response(
                     {'Пользователь с таким именем уже зарегистрирован.'},
                     status=status.HTTP_400_BAD_REQUEST)
-
         user, _ = User.objects.get_or_create(**serializer.validated_data)
-        email = serializer.validated_data.get('email')
-        confirmation_code = random.randint(
-            10 ** (settings.CONF_CODE_MAX_LEN - 1),
-            (10 ** settings.CONF_CODE_MAX_LEN - 1)
-        )
-        user.confirmation_code = confirmation_code
+        user.confirmation_code = "".join([random.choice(DIGS) for _ in range(
+            CONF_CODE_MAX_LEN)])
         user.save()
         send_mail(
             subject='Код подтверждения YaMDb',
-            message=f'Ваш код подтверждения: {confirmation_code}',
+            message=f'Ваш код подтверждения: {user.confirmation_code}',
             from_email=DEFAULT_EMAIL,
             recipient_list=(email,),
         )
