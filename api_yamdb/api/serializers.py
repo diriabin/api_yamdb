@@ -1,11 +1,10 @@
 from django.contrib.auth import get_user_model
-from  django.conf import settings
+from django.conf import settings
 from rest_framework import serializers
 from rest_framework.exceptions import ValidationError
 from rest_framework.generics import get_object_or_404
 
 from .mixins import UsernameMixin
-
 from reviews.constans import MAX_LENGTH_EMAIL
 from reviews.models import Category, Genre, Title, Review, Comment
 

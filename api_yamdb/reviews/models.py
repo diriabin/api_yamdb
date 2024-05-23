@@ -201,9 +201,6 @@ class Review(TextAutorPubDataBased):
 
 
 class Comment(TextAutorPubDataBased):
-    text = models.TextField(
-        verbose_name='Текст'
-    )
     review = models.ForeignKey(
         Review,
         on_delete=models.CASCADE,
