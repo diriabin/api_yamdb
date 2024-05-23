@@ -27,9 +27,7 @@ class CategorySerializer(serializers.ModelSerializer):
 
 
 class TitleReadSerializer(serializers.ModelSerializer):
-    rating = serializers.IntegerField(
-        source='reviews__score__avg', read_only=True
-    )
+    rating = serializers.IntegerField(read_only=True)
     genre = GenreSerializer(many=True)
     category = CategorySerializer()
 
@@ -105,6 +103,16 @@ class GetTokenSerializer(serializers.Serializer, UsernameMixin):
         required=True,
         max_length=settings.CONF_CODE_MAX_LEN,
     )
+
+    def validate_confirmation_code(self, value):
+        invalid_chars = []
+        for char in set(value):
+            if char not in settings.DIGS:
+                invalid_chars.append(char)
+        if invalid_chars:
+            msg = f'Код не должен содержать символы {",".join(invalid_chars)}'
+            raise ValidationError(msg)
+        return value
 
 
 class SignUpSerializer(serializers.Serializer, UsernameMixin):
