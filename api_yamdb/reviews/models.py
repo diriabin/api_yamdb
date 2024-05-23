@@ -1,10 +1,11 @@
 from django.db import models
 from django.core.validators import MinValueValidator, MaxValueValidator
 from django.contrib.auth.models import AbstractUser
+from django.conf import settings
 
 from .constans import (SLICE_STR, MAX_LENGTH_SLUG, MAX_LENGTH_CHAR,
                        MAX_LENGTH_USERNAME, MAX_LENGTH_NAMES,
-                       MIN_REVIEW_SCORE, MAX_REVIEW_SCORE, CONF_CODE_MAX_LEN)
+                       MIN_REVIEW_SCORE, MAX_REVIEW_SCORE)
 from .validators import (validate_username, username_is_not_me,
                          validate_year)
 
@@ -52,7 +53,7 @@ class User(AbstractUser):
         verbose_name='фамилия'
     )
     confirmation_code = models.CharField(
-        max_length=CONF_CODE_MAX_LEN,
+        max_length=settings.CONF_CODE_MAX_LEN,
         null=True,
         blank=False,
         default='XXXX',
@@ -65,7 +66,12 @@ class User(AbstractUser):
         verbose_name = 'Пользователь'
         verbose_name_plural = 'Пользователи'
         ordering = ('username',)
-        unique_together = ('email', 'username',)
+        constraints = [
+            models.UniqueConstraint(
+                fields=["email", "username"],
+                name="unique_email_username",
+            ),
+        ]
 
     @property
     def is_moderator(self):
@@ -73,13 +79,13 @@ class User(AbstractUser):
 
     @property
     def is_admin(self):
-        return self.role == self.ADMIN or self.is_superuser or self.is_staff
+        return self.role == self.ADMIN or self.is_staff
 
     def __str__(self):
         return self.username[:SLICE_STR]
 
 
-class CategoryGenreBased(models.Model):
+class NameSlugBased(models.Model):
     name = models.CharField(
         max_length=MAX_LENGTH_CHAR,
         unique=True,
@@ -99,14 +105,14 @@ class CategoryGenreBased(models.Model):
         return self.name[:SLICE_STR]
 
 
-class Category(CategoryGenreBased):
-    class Meta(CategoryGenreBased.Meta):
+class Category(NameSlugBased):
+    class Meta(NameSlugBased.Meta):
         verbose_name = 'Категория'
         verbose_name_plural = 'Категории'
 
 
-class Genre(CategoryGenreBased):
-    class Meta(CategoryGenreBased.Meta):
+class Genre(NameSlugBased):
+    class Meta(NameSlugBased.Meta):
         verbose_name = 'Жанр'
         verbose_name_plural = 'Жанры'
 
@@ -142,6 +148,12 @@ class Title(models.Model):
         default_related_name = 'titles'
         ordering = ('name',)
         unique_together = ('name', 'year',)
+        constraints = [
+            models.UniqueConstraint(
+                fields=["name", "year"],
+                name="unique_name_year",
+            ),
+        ]
 
     def __str__(self):
         return self.name[:SLICE_STR]
