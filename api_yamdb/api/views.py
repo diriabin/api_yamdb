@@ -182,13 +182,12 @@ class APISignup(APIView):
                     {'Пользователь с таким именем уже зарегистрирован.'},
                     status=status.HTTP_400_BAD_REQUEST)
         user, _ = User.objects.get_or_create(**serializer.validated_data)
-        confirmation_code = (random.choice(DIGS) for _ in range(
-            CONF_CODE_MAX_LEN))
-        user.confirmation_code = confirmation_code
+        user.confirmation_code = "".join([random.choice(DIGS) for _ in range(
+            CONF_CODE_MAX_LEN)])
         user.save()
         send_mail(
             subject='Код подтверждения YaMDb',
-            message=f'Ваш код подтверждения: {confirmation_code}',
+            message=f'Ваш код подтверждения: {user.confirmation_code}',
             from_email=DEFAULT_EMAIL,
             recipient_list=(email,),
         )
