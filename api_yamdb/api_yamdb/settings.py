@@ -125,3 +125,6 @@ INTERNAL_IPS = [
 ]
 
 CONF_CODE_MAX_LEN = 5
+
+URL_MY_PAGE = 'me'
+
