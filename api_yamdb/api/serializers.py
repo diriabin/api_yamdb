@@ -8,7 +8,7 @@ from reviews.validators import username_is_not_me
 
 from reviews.constans import (CONF_CODE_MAX_LEN, MAX_LENGTH_USERNAME,
                               MAX_LENGTH_EMAIL)
-from reviews.validators import UsernameRegexValidator
+from reviews.validators import validate_username
 
 User = get_user_model()
 
@@ -108,7 +108,7 @@ class GetTokenSerializer(serializers.Serializer):
         required=True,
         max_length=150,
         validators=(
-            UsernameRegexValidator(),
+            validate_username,
             username_is_not_me
         )
     )
@@ -122,14 +122,14 @@ class SignUpSerializer(serializers.Serializer):
     email = serializers.EmailField(max_length=254)
     username = serializers.CharField(
         max_length=150,
-        validators=(UsernameRegexValidator(), username_is_not_me,),
+        validators=(validate_username, username_is_not_me,),
     )
 
 
 class NotAdminSerializer(serializers.Serializer):
     username = serializers.CharField(
         max_length=MAX_LENGTH_USERNAME,
-        validators=(UsernameRegexValidator(), username_is_not_me,),
+        validators=(validate_username, username_is_not_me,),
     )
     email = serializers.EmailField(
         max_length=MAX_LENGTH_EMAIL,

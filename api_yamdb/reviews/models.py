@@ -5,7 +5,7 @@ from django.contrib.auth.models import AbstractUser
 from .constans import (SLICE_STR, MAX_LENGTH_SLUG, MAX_LENGTH_CHAR,
                        MAX_LENGTH_USERNAME, MAX_LENGTH_NAMES,
                        MIN_REVIEW_SCORE, MAX_REVIEW_SCORE, CONF_CODE_MAX_LEN)
-from .validators import (UsernameRegexValidator, username_is_not_me,
+from .validators import (validate_username, username_is_not_me,
                          validate_year)
 
 
@@ -23,7 +23,7 @@ class User(AbstractUser):
     username = models.CharField(
         max_length=MAX_LENGTH_USERNAME,
         unique=True,
-        validators=(UsernameRegexValidator(), username_is_not_me,),
+        validators=(validate_username, username_is_not_me,),
         verbose_name='имя пользователя',
     )
     bio = models.TextField(
