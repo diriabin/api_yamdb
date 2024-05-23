@@ -1,5 +1,6 @@
 from django.core.management import BaseCommand, call_command
 
+
 class Command(BaseCommand):
     help = 'Загрузка данных из всех CSV файлов'
 
@@ -17,4 +18,3 @@ class Command(BaseCommand):
             call_command(command, path=path)
 
 # python manage.py load_csv_all
-
