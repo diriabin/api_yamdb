@@ -123,3 +123,5 @@ DEFAULT_EMAIL = 'admin@yamdb.com'
 INTERNAL_IPS = [
     "127.0.0.1",
 ]
+
+CONF_CODE_MAX_LEN = 5
