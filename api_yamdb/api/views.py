@@ -15,7 +15,6 @@ from rest_framework.views import APIView
 from rest_framework_simplejwt.tokens import RefreshToken
 
 from api_yamdb.settings import DEFAULT_EMAIL
-from .constans import URL_PATH
 from .filters import TitleFilter
 from .permissions import (IsAdmin, IsAdminModeratorOwnerOrReadOnly,
                           IsAdminOrReadOnly)
@@ -123,7 +122,7 @@ class UserViewSet(viewsets.ModelViewSet):
         methods=['GET', 'PATCH'],
         detail=False,
         permission_classes=(IsAuthenticated,),
-        url_path=URL_PATH)
+        url_path=settings.URL_MY_PAGE)
     def get_current_user_info(self, request):
         if request.method == 'GET':
             return Response(
