@@ -32,7 +32,7 @@ from .serializers import (
 from reviews.models import Category, Genre, Review, Title
 
 User = get_user_model()
-# Author.objects.aggregate(average_rating=Avg('book__rating'))
+
 
 class TitleViewSet(viewsets.ModelViewSet):
     queryset = Title.objects.annotate(
