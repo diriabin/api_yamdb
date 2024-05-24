@@ -51,7 +51,6 @@ class TitleViewSet(viewsets.ModelViewSet):
     http_method_names = ('get', 'patch', 'post', 'delete')
 
     def get_serializer_class(self):
-        print(Title._meta.ordering)
         if self.action in ('list', 'retrieve'):
             return TitleReadSerializer
         return TitleWriteSerializer
