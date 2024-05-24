@@ -1,3 +1,4 @@
+import re
 from django.contrib.auth import get_user_model
 from django.conf import settings
 from rest_framework import serializers
@@ -5,7 +6,7 @@ from rest_framework.exceptions import ValidationError
 from rest_framework.generics import get_object_or_404
 
 from .mixins import UsernameMixin
-from reviews.constans import MAX_LENGTH_EMAIL
+from reviews.constans import MAX_LENGTH_EMAIL, MAX_LENGTH_USERNAME
 from reviews.models import Category, Genre, Title, Review, Comment
 
 
@@ -61,7 +62,7 @@ class UserSerializer(serializers.ModelSerializer):
         )
 
 
-class ReviewSerializer(serializers.ModelSerializer):
+class ReviewSerializer(serializers.ModelSerializer, UsernameMixin):
     author = serializers.SlugRelatedField(
         default=serializers.CurrentUserDefault(),
         slug_field='username',
@@ -70,15 +71,15 @@ class ReviewSerializer(serializers.ModelSerializer):
 
     def validate(self, data):
         request = self.context['request']
-        if request.method == 'POST':
-            if Review.objects.filter(
-                    title=get_object_or_404(
-                        Title, pk=self.context['view'].kwargs.get('title_id')
-                    ),
-                    author=request.user
-            ).exists():
-                raise ValidationError('Вы не можете добавить более'
-                                      'одного отзыва на произведение')
+        if request.method != 'POST':
+            return data
+        if Review.objects.filter(
+            title=get_object_or_404(
+                Title, pk=self.context['view'].kwargs.get('title_id')
+            ), author=request.user
+        ).exists():
+            raise ValidationError('Вы не можете добавить более'
+                                  'одного отзыва на произведение')
         return data
 
     class Meta:
@@ -98,25 +99,25 @@ class CommentSerializer(serializers.ModelSerializer):
 
 
 class GetTokenSerializer(serializers.Serializer, UsernameMixin):
-
+    username = serializers.CharField()
     confirmation_code = serializers.CharField(
         required=True,
         max_length=settings.CONF_CODE_MAX_LEN,
     )
 
-    def validate_confirmation_code(self, value):
-        invalid_chars = []
-        for char in set(value):
-            if char not in settings.DIGS:
-                invalid_chars.append(char)
+    def validate_confirmation_code(self, pin_code):
+        invalid_chars = re.findall(
+            fr"'{re.escape(settings.DIGS)}\s'", pin_code
+        )
         if invalid_chars:
-            msg = f'Код не должен содержать символы {",".join(invalid_chars)}'
-            raise ValidationError(msg)
-        return value
+            raise ValidationError(
+                f'Код не должен содержать символы {invalid_chars}'
+            )
+        return pin_code
 
 
 class SignUpSerializer(serializers.Serializer, UsernameMixin):
-
+    username = serializers.CharField(max_length=MAX_LENGTH_USERNAME)
     email = serializers.EmailField(max_length=MAX_LENGTH_EMAIL)
 
 
