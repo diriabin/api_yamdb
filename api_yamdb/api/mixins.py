@@ -5,7 +5,7 @@ from reviews.constans import MAX_LENGTH_USERNAME
 
 
 class UsernameMixin:
-        def validate_username(self, username):
-            validate_username(username)
-            username_is_not_me(username)
-            return username
+    def validate_username(self, username):
+        validate_username(username)
+        username_is_not_me(username)
+        return username
