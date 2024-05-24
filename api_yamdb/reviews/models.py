@@ -6,7 +6,7 @@ from django.conf import settings
 from .constans import (SLICE_STR, MAX_LENGTH_SLUG, MAX_LENGTH_CHAR,
                        MAX_LENGTH_USERNAME, MAX_LENGTH_NAMES,
                        MIN_REVIEW_SCORE, MAX_REVIEW_SCORE)
-from .validators import (validate_username, username_is_not_me,
+from .validators import (validate_username, username_is_not_forbidden,
                          validate_year)
 
 
@@ -24,7 +24,7 @@ class User(AbstractUser):
     username = models.CharField(
         max_length=MAX_LENGTH_USERNAME,
         unique=True,
-        validators=(validate_username, username_is_not_me,),
+        validators=(validate_username, username_is_not_forbidden,),
         verbose_name='имя пользователя',
     )
     bio = models.TextField(
