@@ -16,7 +16,7 @@ def validate_username(value):
         raise ValidationError(msg)
 
 
-def username_is_not_me(value):
+def username_is_not_forbidden(value):
     if value in settings.FORBIDDEN_USERNAMES:
         raise ValidationError(
             f'Имя пользователя {value} не разрешено.'
