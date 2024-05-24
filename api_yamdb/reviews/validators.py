@@ -1,33 +1,33 @@
 from datetime import datetime
 
+from django.conf import settings
 from django.core.exceptions import ValidationError
 
-from reviews.constans import FORBIDDEN_USERNAMES
-
-import re
+from reviews.constans import FORBIDDEN_CHAR
 
 
-def validate_username(username):
-    forbidden_chars = re.findall(r'[^\w.@+-]', username)
-    if forbidden_chars:
+def validate_username(value):
+    invalid_chars = []
+    for char in set(value):
+        if char in FORBIDDEN_CHAR:
+            invalid_chars.append(char)
+    if invalid_chars:
+        msg = f'Имя содержит запрещенные символы {",".join(invalid_chars)}'
+        raise ValidationError(msg)
+
+
+def username_is_not_me(value):
+    if value in settings.FORBIDDEN_USERNAMES:
         raise ValidationError(
-            f'Недопустимые символы в имени: {forbidden_chars}'
+            f'Имя пользователя {value} не разрешено.'
         )
-    return username
+    return value
 
 
-def username_is_not_forbidden(username):
-    if username in FORBIDDEN_USERNAMES:
-        raise ValidationError(
-            f'Имя пользователя {username} не разрешено.'
-        )
-    return username
-
-
-def validate_year(year):
+def validate_year(value):
     current_year = datetime.now().year
-    if year >= datetime.now().year:
+    if value >= datetime.now().year:
         raise ValidationError(
-            message=f'Год {year} больше {current_year}!',
+            message=f'Год {value} больше {current_year}!',
         )
-    return year
+    return value
