@@ -175,28 +175,20 @@ class APISignup(APIView):
         email = request.data.get('email')
         username = request.data.get('username')
         try:
-            user, created = User.objects.get_or_create(
+            user, _ = User.objects.get_or_create(
                 **serializer.validated_data)
 
         except IntegrityError:
-            error_message = []
             exist_user = User.objects.filter(
                 Q(username=username) | Q(email=email)
             )
-            user_by_name = exist_user.filter(username=username).first()
-            user_by_email = exist_user.filter(email=email).first()
-            if user_by_email and username != user_by_email.username:
-                error_message.append(
-                    'Пользователь с таким email уже зарегистрирован.')
-            if user_by_name and email != user_by_name.email:
-                error_message.append(
-                    'Пользователь с таким именем уже зарегистрирован.')
-            if error_message:
-                raise ValidationError(' '.join(error_message))
+            raise ValidationError(
+                'Пользователь с таким {} уже зарегистрирован.'.format(
+                    'email' if exist_user.filter(email=email) else 'именем')
+            )
 
-        digital_list = list(settings.DIGS)
-        random.shuffle(digital_list)
-        confirmation_code = "".join(digital_list)[:settings.CONF_CODE_MAX_LEN]
+        confirmation_code = ''.join(random.sample(
+            settings.DIGS, settings.CONF_CODE_MAX_LEN))
 
         ConfirmationCode.objects.update_or_create(
             user=user,
