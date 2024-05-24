@@ -6,7 +6,7 @@ from django.conf import settings
 from .constans import (SLICE_STR, MAX_LENGTH_SLUG, MAX_LENGTH_CHAR,
                        MAX_LENGTH_USERNAME, MAX_LENGTH_NAMES,
                        MIN_REVIEW_SCORE, MAX_REVIEW_SCORE)
-from .validators import (validate_username, username_is_not_me,
+from .validators import (validate_username, username_is_not_forbidden,
                          validate_year)
 
 
@@ -24,7 +24,7 @@ class User(AbstractUser):
     username = models.CharField(
         max_length=MAX_LENGTH_USERNAME,
         unique=True,
-        validators=(validate_username, username_is_not_me,),
+        validators=(validate_username, username_is_not_forbidden,),
         verbose_name='имя пользователя',
     )
     bio = models.TextField(
@@ -52,13 +52,6 @@ class User(AbstractUser):
         blank=True,
         verbose_name='фамилия'
     )
-    confirmation_code = models.CharField(
-        max_length=settings.CONF_CODE_MAX_LEN,
-        null=True,
-        blank=False,
-        default='XXXX',
-        verbose_name='код подтверждения'
-    )
 
     REQUIRED_FIELDS = ('email',)
 
@@ -83,6 +76,28 @@ class User(AbstractUser):
 
     def __str__(self):
         return self.username[:SLICE_STR]
+
+
+class ConfirmationCode(models.Model):
+    code = models.CharField(
+        max_length=settings.CONF_CODE_MAX_LEN,
+        verbose_name='код подтверждения',
+        blank=False,
+        default='XXXX',
+    )
+    is_valid = models.BooleanField(
+        default=False,
+        verbose_name='код актуален'
+    )
+    user = models.OneToOneField(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name='confirmation_code',
+        verbose_name='пользователь'
+    )
+
+    def __str__(self):
+        return f'{self.user.username} - {self.code}'
 
 
 class NameSlugBased(models.Model):
