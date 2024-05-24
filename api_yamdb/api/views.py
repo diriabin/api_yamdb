@@ -39,7 +39,7 @@ class TitleViewSet(viewsets.ModelViewSet):
     queryset = Title.objects.annotate(
         rating=Avg('reviews__score')
     ).order_by(
-        Title._meta.ordering[0]
+        *Title._meta.ordering
     ).select_related(
         'category'
     ).prefetch_related(
@@ -51,6 +51,7 @@ class TitleViewSet(viewsets.ModelViewSet):
     http_method_names = ('get', 'patch', 'post', 'delete')
 
     def get_serializer_class(self):
+        print(Title._meta.ordering)
         if self.action in ('list', 'retrieve'):
             return TitleReadSerializer
         return TitleWriteSerializer
@@ -128,7 +129,7 @@ class UserViewSet(viewsets.ModelViewSet):
         detail=False,
         permission_classes=(IsAuthenticated,),
         url_path=settings.URL_MY_PAGE)
-    def get_current_user_info(self, request):
+    def get_patch_current_user_info(self, request):
         if request.method == 'GET':
             return Response(
                 UserSerializer(request.user).data,
@@ -156,8 +157,8 @@ class APIGetToken(APIView):
             raise ValidationError(
                 'Ошибка. Сначала получите код подтверждения.'
             )
-        if data.get(
-                'confirmation_code') == confirmation_code.code and confirmation_code.is_valid:
+        if data.get('confirmation_code') == confirmation_code.code and (
+                confirmation_code.is_valid):
             token = RefreshToken.for_user(user).access_token
             return Response({'token': str(token)},
                             status=status.HTTP_201_CREATED)
@@ -194,11 +195,9 @@ class APISignup(APIView):
             if error_message:
                 raise ValidationError(' '.join(error_message))
 
-        confirmation_code = "".join(
-            [random.choice(settings.DIGS) for _ in range(
-                settings.CONF_CODE_MAX_LEN
-            )]
-        )
+        digital_list = list(settings.DIGS)
+        random.shuffle(digital_list)
+        confirmation_code = "".join(digital_list)[:settings.CONF_CODE_MAX_LEN]
 
         ConfirmationCode.objects.update_or_create(
             user=user,
