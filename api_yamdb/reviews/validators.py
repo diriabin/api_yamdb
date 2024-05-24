@@ -13,6 +13,7 @@ def validate_username(username):
         )
     return username
 
+
 def username_is_not_forbidden(value):
     if value in settings.FORBIDDEN_USERNAMES:
         raise ValidationError(
