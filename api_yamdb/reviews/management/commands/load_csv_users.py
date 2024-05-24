@@ -14,7 +14,7 @@ class Command(BaseCommand):
 
     def handle(self, *args, **kwargs):
         path = kwargs['path']
-        with open(path, 'rt') as f:
+        with open(path, 'rt', encoding='utf-8') as f:
             reader = csv.reader(f, dialect='excel')
             next(reader)  # Пропустить первую строку (заголовок)
             for row in reader:
