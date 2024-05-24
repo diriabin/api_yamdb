@@ -6,5 +6,4 @@ MAX_LENGTH_EMAIL = 254
 MIN_REVIEW_SCORE = 1
 MAX_REVIEW_SCORE = 10
 SLICE_STR = 20
-FORBIDDEN_USERNAMES = ('me', 'admin', 'superuser')
 FORBIDDEN_CHAR = ('@', '/', '.', '+', '-', ' ')

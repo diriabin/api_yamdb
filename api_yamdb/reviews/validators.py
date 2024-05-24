@@ -1,8 +1,9 @@
 from datetime import datetime
 
+from django.conf import settings
 from django.core.exceptions import ValidationError
 
-from reviews.constans import FORBIDDEN_USERNAMES, FORBIDDEN_CHAR
+from reviews.constans import FORBIDDEN_CHAR
 
 
 def validate_username(value):
@@ -16,7 +17,7 @@ def validate_username(value):
 
 
 def username_is_not_me(value):
-    if value in FORBIDDEN_USERNAMES:
+    if value in settings.FORBIDDEN_USERNAMES:
         raise ValidationError(
             f'Имя пользователя {value} не разрешено.'
         )

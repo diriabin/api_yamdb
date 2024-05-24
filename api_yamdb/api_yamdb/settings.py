@@ -130,4 +130,4 @@ URL_MY_PAGE = 'me'
 
 DIGS = '1234567890'
 
-FORBIDDEN_CHAR = ('@', '/', '.', '+', '-', ' ')
+FORBIDDEN_USERNAMES = ('me',)
