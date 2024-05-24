@@ -52,13 +52,6 @@ class User(AbstractUser):
         blank=True,
         verbose_name='фамилия'
     )
-    confirmation_code = models.CharField(
-        max_length=settings.CONF_CODE_MAX_LEN,
-        null=True,
-        blank=False,
-        default='XXXX',
-        verbose_name='код подтверждения'
-    )
 
     REQUIRED_FIELDS = ('email',)
 
@@ -83,6 +76,28 @@ class User(AbstractUser):
 
     def __str__(self):
         return self.username[:SLICE_STR]
+
+
+class ConfirmationCode(models.Model):
+    code = models.CharField(
+        max_length=settings.CONF_CODE_MAX_LEN,
+        verbose_name='код подтверждения',
+        blank=False,
+        default='XXXX',
+    )
+    is_valid = models.BooleanField(
+        default=False,
+        verbose_name='код актуален'
+    )
+    user = models.OneToOneField(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name='confirmation_code',
+        verbose_name='пользователь'
+    )
+
+    def __str__(self):
+        return f'{self.user.username} - {self.code}'
 
 
 class NameSlugBased(models.Model):
