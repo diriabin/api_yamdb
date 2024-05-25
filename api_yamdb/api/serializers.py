@@ -122,6 +122,7 @@ class GetTokenSerializer(serializers.Serializer, UsernameMixin):
             )
         return pin_code
 
+
 class SignUpSerializer(serializers.Serializer, UsernameMixin):
     username = serializers.CharField(required=True,
                                      max_length=MAX_LENGTH_USERNAME)
