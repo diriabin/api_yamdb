@@ -1,5 +1,6 @@
 from pathlib import Path
 from datetime import timedelta
+import re
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
@@ -130,6 +131,9 @@ URL_MY_PAGE = 'me'
 
 DIGS = '1234567890'
 
-FORBIDDEN_USERNAMES = ('me',)
-
 DEFAULT_CONF_CODE = 'XXXXX'
+
+REGULAR_WITH_INVALID_CHARS = fr'{re.escape(DIGS)}'
+
+FORBIDDEN_USERNAMES = (URL_MY_PAGE,)
+

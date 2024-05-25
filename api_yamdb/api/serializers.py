@@ -1,4 +1,3 @@
-import re
 from django.contrib.auth import get_user_model
 from django.conf import settings
 from rest_framework import serializers
@@ -8,6 +7,7 @@ from rest_framework.generics import get_object_or_404
 from .mixins import UsernameMixin
 from reviews.constans import MAX_LENGTH_EMAIL, MAX_LENGTH_USERNAME
 from reviews.models import Category, Genre, Title, Review, Comment
+from reviews.validators import validate_confirmation_code
 
 User = get_user_model()
 
@@ -98,10 +98,12 @@ class CommentSerializer(serializers.ModelSerializer):
 
 
 class GetTokenSerializer(serializers.Serializer, UsernameMixin):
-    username = serializers.CharField()
+    username = serializers.CharField(required=True,
+                                     max_length=MAX_LENGTH_USERNAME)
     confirmation_code = serializers.CharField(
         required=True,
         max_length=settings.CONF_CODE_MAX_LEN,
+        validators=(validate_confirmation_code,)
     )
 
     def validate_confirmation_code(self, pin_code):
@@ -118,10 +120,11 @@ class GetTokenSerializer(serializers.Serializer, UsernameMixin):
             )
         return pin_code
 
-
 class SignUpSerializer(serializers.Serializer, UsernameMixin):
-    username = serializers.CharField(max_length=MAX_LENGTH_USERNAME)
-    email = serializers.EmailField(max_length=MAX_LENGTH_EMAIL)
+    username = serializers.CharField(required=True,
+                                     max_length=MAX_LENGTH_USERNAME)
+    email = serializers.EmailField(required=True,
+                                   max_length=MAX_LENGTH_EMAIL)
 
 
 class NotAdminSerializer(serializers.ModelSerializer, UsernameMixin):
