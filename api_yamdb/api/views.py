@@ -30,7 +30,7 @@ from .serializers import (
     TitleReadSerializer, TitleWriteSerializer,
     UserSerializer
 )
-from reviews.models import Category, Genre, Review, Title, ConfirmationCode
+from reviews.models import Category, Genre, Review, Title
 
 User = get_user_model()
 
@@ -151,18 +151,13 @@ class APIGetToken(APIView):
         serializer.is_valid(raise_exception=True)
         data = serializer.validated_data
         user = get_object_or_404(User, username=data['username'])
-        confirmation_code = get_object_or_404(ConfirmationCode, user=user)
-        if not confirmation_code.is_valid:
-            raise ValidationError(
-                'Ошибка. Сначала получите код подтверждения.'
-            )
-        if data.get('confirmation_code') == confirmation_code.code and (
-                confirmation_code.is_valid):
+        if data.get('confirmation_code') == user.confirmation_code:
             token = RefreshToken.for_user(user).access_token
             return Response({'token': str(token)},
                             status=status.HTTP_201_CREATED)
-        confirmation_code.is_valid = False
-        confirmation_code.save()
+        user.confirmation_code = settings.DEFAULT_CONF_CODE
+        print(user.confirmation_code)
+        user.save()
         raise ValidationError('Неверно! запросите новый код подтверждения')
 
 
@@ -187,17 +182,14 @@ class APISignup(APIView):
                     'email' if exist_user.filter(email=email) else 'именем')
             )
 
-        confirmation_code = ''.join(random.sample(
-            settings.DIGS, settings.CONF_CODE_MAX_LEN))
-
-        ConfirmationCode.objects.update_or_create(
-            user=user,
-            defaults={'code': confirmation_code, 'is_valid': True}
-        )
+        user.confirmation_code = ''.join(random.sample(
+            settings.DIGS, settings.CONF_CODE_MAX_LEN
+        ))
+        user.save()
 
         send_mail(
             subject='Код подтверждения YaMDb',
-            message=f'Ваш код подтверждения: {confirmation_code}',
+            message=f'Ваш код подтверждения: {user.confirmation_code}',
             from_email=settings.DEFAULT_EMAIL,
             recipient_list=[email],
         )

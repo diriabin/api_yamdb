@@ -9,7 +9,6 @@ from .mixins import UsernameMixin
 from reviews.constans import MAX_LENGTH_EMAIL, MAX_LENGTH_USERNAME
 from reviews.models import Category, Genre, Title, Review, Comment
 
-
 User = get_user_model()
 
 
@@ -74,9 +73,9 @@ class ReviewSerializer(serializers.ModelSerializer, UsernameMixin):
         if request.method != 'POST':
             return data
         if Review.objects.filter(
-            title=get_object_or_404(
-                Title, pk=self.context['view'].kwargs.get('title_id')
-            ), author=request.user
+                title=get_object_or_404(
+                    Title, pk=self.context['view'].kwargs.get('title_id')
+                ), author=request.user
         ).exists():
             raise ValidationError('Вы не можете добавить более'
                                   'одного отзыва на произведение')
@@ -106,6 +105,10 @@ class GetTokenSerializer(serializers.Serializer, UsernameMixin):
     )
 
     def validate_confirmation_code(self, pin_code):
+        if pin_code == settings.DEFAULT_CONF_CODE:
+            raise ValidationError(
+                'Ошибка. Сначала получите код подтверждения.'
+            )
         invalid_chars = re.findall(
             fr"'{re.escape(settings.DIGS)}\s'", pin_code
         )
@@ -122,6 +125,5 @@ class SignUpSerializer(serializers.Serializer, UsernameMixin):
 
 
 class NotAdminSerializer(serializers.ModelSerializer, UsernameMixin):
-
     class Meta(UserSerializer.Meta):
         read_only_fields = ('role',)
