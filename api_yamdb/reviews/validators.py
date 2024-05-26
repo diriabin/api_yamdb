@@ -39,6 +39,6 @@ def validate_confirmation_code(pin_code):
     )
     if invalid_chars:
         raise ValidationError(
-            f'Код не должен содержать символы {invalid_chars}'
+            f'Код не должен содержать символы {set(invalid_chars)}'
         )
     return pin_code
