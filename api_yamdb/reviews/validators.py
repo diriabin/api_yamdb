@@ -26,9 +26,9 @@ def username_is_not_forbidden(value):
 
 def validate_year(year):
     current_year = datetime.now().year
-    if year >= current_year:
+    if year > current_year:
         raise ValidationError(
-            message=f'Год {year} больше {current_year}!',
+            message=f'Нельзя использовать не наступивший год: {year}',
         )
     return year
 

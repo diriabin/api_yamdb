@@ -4,7 +4,7 @@ from django.contrib.auth import get_user_model
 from django.conf import settings
 from django.core.mail import send_mail
 from django.db import IntegrityError
-from django.db.models import Avg, Q
+from django.db.models import Avg
 from django.shortcuts import get_object_or_404
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework import filters, mixins, status, viewsets
@@ -156,7 +156,6 @@ class APIGetToken(APIView):
             return Response({'token': str(token)},
                             status=status.HTTP_201_CREATED)
         user.confirmation_code = settings.DEFAULT_CONF_CODE
-        print(user.confirmation_code)
         user.save()
         raise ValidationError('Неверно! запросите новый код подтверждения')
 
@@ -168,18 +167,14 @@ class APISignup(APIView):
         serializer = SignUpSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         email = request.data.get('email')
-        username = request.data.get('username')
         try:
             user, _ = User.objects.get_or_create(
                 **serializer.validated_data)
 
         except IntegrityError:
-            exist_user = User.objects.filter(
-                Q(username=username) | Q(email=email)
-            )
             raise ValidationError(
                 'Пользователь с таким {} уже зарегистрирован.'.format(
-                    'email' if exist_user.filter(email=email) else 'именем')
+                    'email' if User.objects.filter(email=email) else 'именем')
             )
 
         user.confirmation_code = ''.join(random.sample(
