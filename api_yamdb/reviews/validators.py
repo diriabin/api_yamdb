@@ -26,9 +26,9 @@ def username_is_not_forbidden(value):
 
 def validate_year(year):
     current_year = datetime.now().year
-    if year >= current_year:
+    if year > current_year:
         raise ValidationError(
-            message=f'Год {year} больше {current_year}!',
+            message=f'Нельзя использовать не наступивший год: {year}',
         )
     return year
 
@@ -39,6 +39,6 @@ def validate_confirmation_code(pin_code):
     )
     if invalid_chars:
         raise ValidationError(
-            f'Код не должен содержать символы {invalid_chars}'
+            f'Код не должен содержать символы {set(invalid_chars)}'
         )
     return pin_code
